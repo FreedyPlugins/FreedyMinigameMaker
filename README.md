@@ -1,0 +1,2 @@
+# FreedyMinigameMaker
+Make MiniGame finally
