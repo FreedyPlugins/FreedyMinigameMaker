@@ -51,6 +51,11 @@ Make MiniGame finally
 /fmg set <게임이름> timePerPlayer <플레이어수의비례한죵료타이머배수>
 
 
+
+
+
+
+
 좀비서바이벌  제작 방법:
 /fmg create <게임이름> <최대인원> <시작인원> <시작대기초> <종료대기초>
 
