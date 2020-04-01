@@ -53,7 +53,11 @@ Make MiniGame finally
 
 좀비서바이벌  제작 방법:
 /fmg create <게임이름> <최대인원> <시작인원> <시작대기초> <종료대기초>
+
 /fmg set <게임이름> gameType zombieMode
+
 /fmg set <게임이름> maxHealth <체력> red
+
 /fmg set <게임이름> teamMode false
+
 미니게임이 끝날 때 이동 될 장소에서 /fmg set <게임이름> end
