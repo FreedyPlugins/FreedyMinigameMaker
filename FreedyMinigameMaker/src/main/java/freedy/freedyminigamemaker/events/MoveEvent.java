@@ -13,7 +13,7 @@ import java.util.List;
 
 public class MoveEvent implements Listener {
 
-    private FreedyMinigameMaker plugin;
+    private final FreedyMinigameMaker plugin;
 
     public MoveEvent(FreedyMinigameMaker plugin) {
         this.plugin = plugin;

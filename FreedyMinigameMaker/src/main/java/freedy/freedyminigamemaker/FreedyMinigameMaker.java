@@ -2,59 +2,59 @@ package freedy.freedyminigamemaker;
 
 import freedy.freedyminigamemaker.commands.*;
 import freedy.freedyminigamemaker.events.*;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import java.util.*;
 
 public final class FreedyMinigameMaker extends JavaPlugin {
 
+    public MiniGames miniGames;
 
-    private Map<String, Integer> taskIDList = new HashMap<>();
+
+    //private Map<String, Integer> taskIDList = new HashMap<>();
+    //private Map<Location, Block> blockMap = new HashMap<>();
+
 
     @Override
     public void onEnable() {
+        miniGames = new MiniGames(this);
         getConfig().options().copyDefaults();
         saveDefaultConfig();
         getServer().getPluginManager().registerEvents(new QuitEvent(this), this);
         getServer().getPluginManager().registerEvents(new DeathEvent(this), this);
         getServer().getPluginManager().registerEvents(new MoveEvent(this), this);
         getCommand("fmg").setExecutor(new MinigameCommand(this));
+
     }
 
     @Override
     public void onDisable() {
-        for (String s : getConfig().getStringList("gameList"))
-            disableGame(s);
+        for (MiniGame miniGame : miniGames.miniGames.values())
+            miniGame.disable();
     }
-
+/*
     public void addPlayer(Player player, String gameName) {
         final int maxPlayers = getConfig().getInt("miniGames." + gameName + ".maxPlayers");
         boolean isPlaying = getConfig().getBoolean("miniGames." + gameName + ".isPlaying");
         List<String> playerNameList = getConfig().getStringList("miniGames." + gameName + ".players");
         String playerName = player.getName();
+        String joinMsg = getConfig().getString("miniGames." + gameName + ".joinMsg");
+        List<String> gameList = getConfig().getStringList("gameList");
 
+        if (gameList.contains(gameName)) {
+            if (!playerNameList.contains(playerName)) {
+                if (playerNameList.size() < maxPlayers) {
+                    if (!isPlaying) {
 
-        if (!playerNameList.contains(playerName)) {
-            if (playerNameList.size() < maxPlayers) {
-                if (!isPlaying) {
+                        playerNameList.add(playerName);
+                        for (String s : playerNameList)
+                            Bukkit.getPlayer(s).sendMessage(joinMsg.replace("{player}", playerName).replace("{game}", gameName));
+                        getConfig().set("miniGames." + gameName + ".players", playerNameList);
+                        saveConfig();
+                        startGameLogic(gameName);
 
-                    playerNameList.add(playerName);
-                    for (String s : playerNameList)
-                        Bukkit.getPlayer(s).sendMessage("§a" + playerName + "이(가) " + gameName + "에 참여했어요!");
-                    getConfig().set("miniGames." + gameName + ".players", playerNameList);
-                    saveConfig();
-                    startGameLogic(gameName);
-
-                } else player.sendMessage("§c" + "게임이 이미 시작되었습니다");
-            } else player.sendMessage("§c" + "게임이 최대인원에 도달했습니다");
-        } else player.sendMessage("§c" + "게임을 이미 플레이 중입니다");
-
+                    } else player.sendMessage("§c" + "게임이 이미 시작되었습니다");
+                } else player.sendMessage("§c" + "게임이 최대인원에 도달했습니다");
+            } else player.sendMessage("§c" + "게임을 이미 플레이 중입니다");
+        } else player.sendMessage("§c" + "그 게임이 없습니다");
     }
 
     final List<String> teamTypeList = Arrays.asList("default", "blue", "red");
@@ -63,8 +63,14 @@ public final class FreedyMinigameMaker extends JavaPlugin {
         final String gameType = getConfig().getString("miniGames." + gameName + ".gameType");
         final boolean teamMode = getConfig().getBoolean("miniGames." + gameName + ".teamMode");
         List<String> playerNameList = getConfig().getStringList("miniGames." + gameName + ".players");
+        String startMsg = getConfig().getString("miniGames." + gameName + ".startMsg");
+        List<String> startCmd = getConfig().getStringList("miniGames." + gameName + ".startCmd");
         Map<String, Integer> teamStartLocationSize = new HashMap<>();
         Map<String, List<Location>> teamStartLocationList = new HashMap<>();
+        List<String> conStartCmd = getConfig().getStringList("miniGames." + gameName + ".conStartCmd");
+
+        for (String cmd : conStartCmd)
+            Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd.replace("{game}", gameName));
         for (String teamName : teamTypeList) {
             teamStartLocationSize.put(teamName, getConfig().getInt("miniGames." + gameName + "." + teamName + "StartLocationAmount"));
             teamStartLocationList.put(teamName, new ArrayList<>());
@@ -81,55 +87,82 @@ public final class FreedyMinigameMaker extends JavaPlugin {
                 Collections.shuffle(teamStartLocationList.get(team));
             }
         int i = 0;
-        if (teamMode) {
-            Collections.shuffle(playerNameList);
-            i = 0;
-            int j = 0;
-            List<String> redTeamPlayerNameList = getConfig().getStringList("miniGames." + gameName + ".redTeamPlayerList");
-            List<String> blueTeamPlayerNameList = getConfig().getStringList("miniGames." + gameName + ".blueTeamPlayerList");
-            for (String playerName : playerNameList) {
-                Player player = Bukkit.getPlayer(playerName);
-                player.sendMessage("§a" + "게임이 시작되었어요!");
-                if (i % 2 == 0) {
-                    redTeamPlayerNameList.add(playerName);
-                    player.teleport(teamStartLocationList.get("red").get(i));
-                    i++;
-                } else {
-                    blueTeamPlayerNameList.add(playerName);
-                    player.teleport(teamStartLocationList.get("blue").get(j));
-                    j++;
-                }
-            }
-            getConfig().set("miniGames." + gameName + ".blueTeamPlayerList", blueTeamPlayerNameList);
-            getConfig().set("miniGames." + gameName + ".redTeamPlayerList", redTeamPlayerNameList);
-            saveConfig();
-        } else
-            for (String s : playerNameList) {
-                Player player = Bukkit.getPlayer(s);
-                player.sendMessage("§a" + "게임이 시작되었어요!");
-                player.teleport(teamStartLocationList.get("default").get(i));
-                i++;
-            }
+        List<String> redTeamPlayerNameList = getConfig().getStringList("miniGames." + gameName + ".redTeamPlayerList");
+        List<String> blueTeamPlayerNameList = getConfig().getStringList("miniGames." + gameName + ".blueTeamPlayerList");
+        double redTeamStartMaxHeart = getConfig().getDouble("miniGames." + gameName + ".redTeamStartMaxHeart");
+        double blueTeamStartMaxHeart = getConfig().getDouble("miniGames." + gameName + ".blueTeamStartMaxHeart");
+        double defaultStartMaxHeart = getConfig().getDouble("miniGames." + gameName + ".defaultStartMaxHeart");
         switch (gameType) {
             case "hideAndSeek":
+                for (String s : playerNameList) {
+                    Player player = Bukkit.getPlayer(s);
+                    player.sendMessage(startMsg.replace("{game}", gameName));
+                    for (String cmd : startCmd)
+                        Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd.replace("{player}", s).replace("{game}", gameName));
+                    player.teleport(teamStartLocationList.get("default").get(i));
+                    i++;
+                    player.setHealthScale(defaultStartMaxHeart);
+                }
                 setBlockOnStart(playerNameList, gameName);
                 break;
             case "zombieMode":
                 Collections.shuffle(playerNameList);
                 i = 0;
-                List<String> redTeamPlayerNameList = getConfig().getStringList("miniGames." + gameName + ".redTeamPlayerList");
-                List<String> blueTeamPlayerNameList = getConfig().getStringList("miniGames." + gameName + ".blueTeamPlayerList");
-                for (String s : playerNameList) {
-                    if (i == 0) redTeamPlayerNameList.add(s);
-                    else blueTeamPlayerNameList.add(s);
-                    i++;
+                for (String playerName : playerNameList) {
+                    Player player = Bukkit.getPlayer(playerName);
+                    player.sendMessage(startMsg.replace("{game}", gameName));
+                    for (String cmd : startCmd)
+                        Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd.replace("{player}", playerName).replace("{game}", gameName));
+                    if (i == 0) {
+                        redTeamPlayerNameList.add(playerName);
+                        player.teleport(teamStartLocationList.get("red").get(i));
+                        i++;
+                        player.setHealthScale(redTeamStartMaxHeart);
+                    } else {
+                        blueTeamPlayerNameList.add(playerName);
+                        player.teleport(teamStartLocationList.get("blue").get(i));
+                        i++;
+                        player.setHealthScale(blueTeamStartMaxHeart);
+                    }
                 }
-                getConfig().set("miniGames." + gameName + ".blueTeamPlayerList", blueTeamPlayerNameList);
-                getConfig().set("miniGames." + gameName + ".redTeamPlayerList", redTeamPlayerNameList);
-                saveConfig();
+                break;
+            default:
+                i = 0;
+                int j = 0;
+                if (teamMode) {
+                    for (String playerName : playerNameList) {
+                        Player player = Bukkit.getPlayer(playerName);
+                        player.sendMessage(startMsg.replace("{game}", gameName));
+                        for (String cmd : startCmd)
+                            Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd.replace("{player}", playerName).replace("{game}", gameName));
+                        if (i % 2 == 0) {
+                            redTeamPlayerNameList.add(playerName);
+                            player.teleport(teamStartLocationList.get("red").get(i));
+                            i++;
+                            player.setHealthScale(redTeamStartMaxHeart);
+                        } else {
+                            blueTeamPlayerNameList.add(playerName);
+                            player.teleport(teamStartLocationList.get("blue").get(j));
+                            j++;
+                            player.setHealthScale(blueTeamStartMaxHeart);
+                        }
+                    }
+                } else {
+                    for (String playerName : playerNameList) {
+                        Player player = Bukkit.getPlayer(playerName);
+                        player.sendMessage(startMsg.replace("{game}", gameName));
+                        for (String cmd : startCmd)
+                            Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd.replace("{player}", playerName).replace("{game}", gameName));
+                        player.teleport(teamStartLocationList.get("default").get(i));
+                        i++;
+                        player.setHealthScale(defaultStartMaxHeart);
+                    }
+                }
                 break;
         }
-
+        getConfig().set("miniGames." + gameName + ".blueTeamPlayerList", blueTeamPlayerNameList);
+        getConfig().set("miniGames." + gameName + ".redTeamPlayerList", redTeamPlayerNameList);
+        saveConfig();
     }
 
 
@@ -139,6 +172,7 @@ public final class FreedyMinigameMaker extends JavaPlugin {
         int timer = getConfig().getInt("miniGames." + gameName + ".waitTime");
         boolean isPlaying = getConfig().getBoolean("miniGames." + gameName + ".isPlaying");
         boolean isWaiting = getConfig().getBoolean("miniGames." + gameName + ".isWaiting");
+        String startTimerMsg = getConfig().getString("miniGames." + gameName + ".startTimerMsg");
         List<String> playerNameList = getConfig().getStringList("miniGames." + gameName + ".players");
         if (playerNameList.size() >= maxStartPlayers) {
             isWaiting = true;
@@ -150,7 +184,7 @@ public final class FreedyMinigameMaker extends JavaPlugin {
                 taskIDList.replace(gameName + "-stopping", Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> stopGameLogic(gameName), 20));
             } else {
                 for (String s : playerNameList)
-                    Bukkit.getPlayer(s).sendMessage("§7" + (waitForStartTime - timer) + "초후 게임 시작...");
+                    Bukkit.getPlayer(s).sendMessage(startTimerMsg.replace("{time}", String.valueOf(waitForStartTime - timer)));
                 timer++;
                 taskIDList.replace(gameName + "-starting", Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> startGameLogic(gameName), 20));
             }
@@ -182,10 +216,42 @@ public final class FreedyMinigameMaker extends JavaPlugin {
 
     public void stopGame(String gameName) {
         List<String> playerNameList = getConfig().getStringList("miniGames." + gameName + ".players");
-        System.out.println("게임이 종료되는 메소드에 입장함");
+        List<String> redTeamPlayerNameList = getConfig().getStringList("miniGames." + gameName + ".redTeamPlayerList");
+        List<String> blueTeamPlayerNameList = getConfig().getStringList("miniGames." + gameName + ".blueTeamPlayerList");
+        String noWinnerEndMsg = getConfig().getString("miniGames." + gameName + ".noWinnerEndMsg").replace("{game}", gameName);
+        String redWinEndMsg = getConfig().getString("miniGames." + gameName + ".redWinEndMsg").replace("{game}", gameName);
+        String blueWinEndMsg = getConfig().getString("miniGames." + gameName + ".blueWinEndMsg").replace("{game}", gameName);
+        String endMsg = getConfig().getString("miniGames." + gameName + ".EndMsg");
+        String showingEndMsg;
+        String gameType = getConfig().getString("miniGames." + gameName + ".gameType");
+        boolean teamMode = getConfig().getBoolean("miniGames." + gameName + ".teamMode");
+        int timer = getConfig().getInt("miniGames." + gameName + ".waitTime");
+        boolean isPlaying = getConfig().getBoolean("miniGames." + gameName + ".isPlaying");
+
+        switch (gameType) {
+            case "zombieMode":
+                if (isPlaying && timer == 0) showingEndMsg = noWinnerEndMsg;
+                else if (redTeamPlayerNameList.size() == 0) showingEndMsg = blueWinEndMsg;
+                else if (blueTeamPlayerNameList.size() == 0) showingEndMsg = redWinEndMsg;
+                else showingEndMsg = noWinnerEndMsg;
+                break;
+            default:
+                if (teamMode) {
+                    if (isPlaying && timer == 0) showingEndMsg = noWinnerEndMsg;
+                    else if (redTeamPlayerNameList.size() == 0) showingEndMsg = blueWinEndMsg;
+                    else if (blueTeamPlayerNameList.size() == 0) showingEndMsg = redWinEndMsg;
+                    else showingEndMsg = noWinnerEndMsg;
+                } else {
+                    if (isPlaying && timer == 0) showingEndMsg = noWinnerEndMsg;
+                    else if (playerNameList.size() == 1)
+                        showingEndMsg = noWinnerEndMsg.replace("{game}", gameName).replace("{player}", playerNameList.get(0));
+                    else showingEndMsg = endMsg.replace("{game}", gameName);
+                }
+                break;
+        }
         for (String playerName : playerNameList) {
             Player player = Bukkit.getPlayer(playerName);
-            player.sendMessage("§a" + "게임이 종료됩니다~!");
+            player.sendMessage(showingEndMsg);
             removePlayer(playerName, gameName);
         }
         disableGame(gameName);
@@ -193,27 +259,74 @@ public final class FreedyMinigameMaker extends JavaPlugin {
 
     public void stopGameLogic(String gameName) {
         final int waitForEndTime = getConfig().getInt("miniGames." + gameName + ".waitForEndTime");
-        boolean isPlaying = getConfig().getBoolean("miniGames." + gameName + ".isPlaying");
-        boolean isWaiting = getConfig().getBoolean("miniGames." + gameName + ".isWaiting");
         int timer = getConfig().getInt("miniGames." + gameName + ".waitTime");
         List<String> playerNameList = getConfig().getStringList("miniGames." + gameName + ".players");
-            if (timer >= waitForEndTime) {
-                timer = 0;
-                getConfig().set("miniGames." + gameName + ".isPlaying", false);
-                System.out.println("로직에 입장함");
-                stopGame(gameName);
-            }else {
-                for (String s : playerNameList)
-                    Bukkit.getPlayer(s).sendMessage("§7" + (waitForEndTime - timer) + "초후 게임 종료...");
-                timer++;
-                taskIDList.replace(gameName + "-stopping", Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> stopGameLogic(gameName), 20));
-            }
+        int timePerPlayer = getConfig().getInt("miniGames." + gameName + ".timePerPlayer");
+        String endTimerMsg = getConfig().getString("miniGames." + gameName + ".endTimerMsg");
+        int endTime = (waitForEndTime * timePerPlayer);
+        if (timer >= endTime) {
+            timer = 0;
+            getConfig().set("miniGames." + gameName + ".isPlaying", false);
+            stopGame(gameName);
+        } else {
+            for (String s : playerNameList)
+                Bukkit.getPlayer(s).sendMessage(endTimerMsg.replace("{time}", String.valueOf(endTime - timer)));
+            timer++;
+            taskIDList.replace(gameName + "-stopping", Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(this, () -> stopGameLogic(gameName), 20));
+        }
         getConfig().set("miniGames." + gameName + ".waitTime", timer);
+        saveConfig();
+    }
+
+    public void removePlayer(String playerName, String gameName) {
+        final int waitForStartTime = getConfig().getInt("miniGames." + gameName + ".waitForStartTime");
+        boolean isWaiting = getConfig().getBoolean("miniGames." + gameName + ".isWaiting");
+        List<String> playerNameList = getConfig().getStringList("miniGames." + gameName + ".players");
+        List<String> redTeamPlayerNameList = getConfig().getStringList("miniGames." + gameName + ".redTeamPlayerList");
+        List<String> blueTeamPlayerNameList = getConfig().getStringList("miniGames." + gameName + ".blueTeamPlayerList");
+        World world = Bukkit.getWorld(getConfig().getString("miniGames." + gameName + ".endLocation.world"));
+        double x = Double.parseDouble(getConfig().getString("miniGames." + gameName + ".endLocation.x"));
+        double y = Double.parseDouble(getConfig().getString("miniGames." + gameName + ".endLocation.y"));
+        double z = Double.parseDouble(getConfig().getString("miniGames." + gameName + ".endLocation.z"));
+        float yaw = Float.parseFloat(getConfig().getString("miniGames." + gameName + ".endLocation.yaw"));
+        float pitch = Float.parseFloat(getConfig().getString("miniGames." + gameName + ".endLocation.pitch"));
+        String quitMsg = getConfig().getString("miniGames." + gameName + ".quitMsg");
+        List<String> quitCmd = getConfig().getStringList("miniGames." + gameName + ".quitCmd");
+        Location endLocation = new Location(world, x, y, z, yaw, pitch);
+        Player player = Bukkit.getPlayer(playerName);
+
+        for (String s : playerNameList)
+            Bukkit.getPlayer(s).sendMessage(quitMsg.replace("{player}", s));
+        for (String cmd : quitCmd)
+            Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd.replace("{player}", playerName).replace("{game}", gameName));
+        player.teleport(endLocation);
+        player.setGameMode(GameMode.valueOf(getConfig().getString("miniGames." + gameName + ".defaultEndGameMode")));
+        player.setHealthScale(20.0);
+
+        if (isWaiting && waitForStartTime > playerNameList.size()) {
+            getConfig().set("miniGames." + gameName + ".isWaiting", false);
+            getConfig().set("miniGames." + gameName + ".waitTime", 0);
+            if (!taskIDList.isEmpty()) {
+                Bukkit.getScheduler().cancelTask(taskIDList.get(gameName + "-starting"));
+                Bukkit.getScheduler().cancelTask(taskIDList.get(gameName + "-stopping"));
+            }
+        }
+
+        playerNameList.remove(playerName);
+        redTeamPlayerNameList.remove(playerName);
+        blueTeamPlayerNameList.remove(playerName);
+        getConfig().set("miniGames." + gameName + ".players", playerNameList);
+        getConfig().set("miniGames." + gameName + ".redTeamPlayerList", redTeamPlayerNameList);
+        getConfig().set("miniGames." + gameName + ".blueTeamPlayerList", redTeamPlayerNameList);
         saveConfig();
     }
 
     private void disableGame(String gameName) {
         List<String> playerNameList = getConfig().getStringList("miniGames." + gameName + ".players");
+        List<String> conEndCmd = getConfig().getStringList("miniGames." + gameName + ".conEndCmd");
+
+        for (String cmd : conEndCmd)
+            Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd.replace("{game}", gameName));
         if (!playerNameList.isEmpty()) {
             for (String playerName : playerNameList) {
                 removePlayer(playerName, gameName);
@@ -231,39 +344,6 @@ public final class FreedyMinigameMaker extends JavaPlugin {
         }
     }
 
-    public void removePlayer(String playerName, String gameName) {
-        final int waitForStartTime = getConfig().getInt("miniGames." + gameName + ".waitForStartTime");
-        boolean isWaiting = getConfig().getBoolean("miniGames." + gameName + ".isWaiting");
-        List<String> playerNameList = getConfig().getStringList("miniGames." + gameName + ".players");
-        List<String> redTeamPlayerNameList = getConfig().getStringList("miniGames." + gameName + ".redTeamPlayerList");
-        List<String> blueTeamPlayerNameList = getConfig().getStringList("miniGames." + gameName + ".blueTeamPlayerList");
-        World world = Bukkit.getWorld(getConfig().getString("miniGames." + gameName + ".endLocation.world"));
-        double x = Double.parseDouble(getConfig().getString("miniGames." + gameName + ".endLocation.x"));
-        double y = Double.parseDouble(getConfig().getString("miniGames." + gameName + ".endLocation.y"));
-        double z = Double.parseDouble(getConfig().getString("miniGames." + gameName + ".endLocation.z"));
-        float yaw = Float.parseFloat(getConfig().getString("miniGames." + gameName + ".endLocation.yaw"));
-        float pitch = Float.parseFloat(getConfig().getString("miniGames." + gameName + ".endLocation.pitch"));
-        Location endLocation = new Location(world, x, y, z, yaw, pitch);
-        Player player = Bukkit.getPlayer(playerName);
-
-        for (String s : playerNameList)
-            Bukkit.getPlayer(s).sendMessage("§6" + playerName + "이(가) 떠났습니다");
-
-        player.teleport(endLocation);
-        player.setGameMode(GameMode.valueOf(getConfig().getString("miniGames." + gameName + ".defaultEndGameMode")));
-
-        if (isWaiting && waitForStartTime > playerNameList.size()) {
-            getConfig().set("miniGames." + gameName + ".isWaiting", false);
-        }
-        playerNameList.remove(playerName);
-        redTeamPlayerNameList.remove(playerName);
-        blueTeamPlayerNameList.remove(playerName);
-        getConfig().set("miniGames." + gameName + ".players", playerNameList);
-        getConfig().set("miniGames." + gameName + ".redTeamPlayerList", redTeamPlayerNameList);
-        getConfig().set("miniGames." + gameName + ".blueTeamPlayerList", redTeamPlayerNameList);
-        saveConfig();
-    }
-
     public void createGame(String gameName, int maxPlayers, int maxStartPlayers, int waitForStartTime, int waitForEndTime) { //<미니게임이름> <미니게임최대인원> <미니게임시작인원> <시작대기시간초> <게임종료시간초>
         getConfig().set("miniGames." + gameName + ".maxPlayers", maxPlayers);
         getConfig().set("miniGames." + gameName + ".maxStartPlayers", maxStartPlayers);
@@ -272,6 +352,24 @@ public final class FreedyMinigameMaker extends JavaPlugin {
         getConfig().set("miniGames." + gameName + ".gameType", "death");
         getConfig().set("miniGames." + gameName + ".defaultStartGameMode", "ADVENTURE");
         getConfig().set("miniGames." + gameName + ".defaultEndGameMode", "ADVENTURE");
+        getConfig().set("miniGames." + gameName + ".defaultStartMaxHeart", 20.0);
+        getConfig().set("miniGames." + gameName + ".redTeamStartMaxHeart", 20.0);
+        getConfig().set("miniGames." + gameName + ".blueTeamStartMaxHeart", 20.0);
+        getConfig().set("miniGames." + gameName + ".timePerPlayer", 1);
+        getConfig().set("miniGames." + gameName + ".joinMsg", "§6{player}이(가) {game}에 참여했습니다");
+        getConfig().set("miniGames." + gameName + ".quitMsg", "§6{player}이(가) 떠났습니다");
+        getConfig().set("miniGames." + gameName + ".startMsg", "§a{game}이(가) 시작되었어요!");
+        getConfig().set("miniGames." + gameName + ".noWinnerEndMsg", "§a{game}이(가) 종료되었어요, 무승부입니다!");
+        getConfig().set("miniGames." + gameName + ".redWinEndMsg", "§a{game}이(가) 종료되었어요, 레드팀이 승리하였습니다!");
+        getConfig().set("miniGames." + gameName + ".blueWinEndMsg", "§a{game}이(가) 종료되었어요, 블루팀이 승리하였습니다!");
+        getConfig().set("miniGames." + gameName + ".endMsg", "§a{game}이(가) 종료되었어요! 승자는 {player}입니다!");
+        getConfig().set("miniGames." + gameName + ".startTimerMsg", "§7{time}초 후에 시작...");
+        getConfig().set("miniGames." + gameName + ".endTimerMsg", "§7{time}초 후에 종료...");
+        getConfig().set("miniGames." + gameName + ".beZombieMsg", "§c{player}이(가) {killer}에 의해 좀비가 되었습니다!");
+        getConfig().set("miniGames." + gameName + ".startCmd", new ArrayList<>());
+        getConfig().set("miniGames." + gameName + ".ConStartCmd", new ArrayList<>());
+        getConfig().set("miniGames." + gameName + ".quitCmd", new ArrayList<>());
+        getConfig().set("miniGames." + gameName + ".conEndCmd", new ArrayList<>());
         List<String> gameList = getConfig().getStringList("gameList");
         gameList.add(gameName);
         getConfig().set("gameList", gameList);
@@ -304,4 +402,7 @@ public final class FreedyMinigameMaker extends JavaPlugin {
         }
         saveConfig();
     }
+
+
+ */
 }
