@@ -1,9 +1,6 @@
 package freedy.freedyminigamemaker;
 
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.World;
+import org.bukkit.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,11 +51,11 @@ public class DataStore extends DataEditor {
     }
 
     public double getRedStartMaxHeart() {
-        return plugin.getConfig().getDouble(gamePath + "redStartMaxHeart");
+        return plugin.getConfig().getDouble(gamePath + "redTeamStartMaxHeart");
     }
 
     public double getBlueStartMaxHeart() {
-        return plugin.getConfig().getDouble(gamePath + "blueStartMaxHeart");
+        return plugin.getConfig().getDouble(gamePath + "blueTeamStartMaxHeart");
     }
 
     public List<String> getGameList() {
@@ -83,6 +80,79 @@ public class DataStore extends DataEditor {
 
     public boolean getQuitGameMode() {
         return plugin.getConfig().getBoolean(gamePath + "quitGameMode");
+    }
+
+    public List<String> getDropList() {
+        return plugin.getConfig().getStringList(gamePath + "dropItems.dropList");
+    }
+
+    public int getDrops(String material) {
+        return plugin.getConfig().getInt(gamePath + "dropItems.drop." + material);
+    }
+
+    public boolean getNeedClearInv() {
+        return plugin.getConfig().getBoolean(gamePath + "needClearInv");
+    }
+
+    public int getRepeatTime() {
+        return plugin.getConfig().getInt(gamePath + "repeatTime");
+    }
+
+    public double getExtraDamage() {
+        return plugin.getConfig().getDouble(gamePath + "extraDamage");
+    }
+
+    public int getDamageRate() {
+        return plugin.getConfig().getInt(gamePath + "damageRate");
+    }
+
+    public double getResistingDamage() {
+        return plugin.getConfig().getDouble(gamePath + "resistingDamage");
+    }
+
+    public int getResistingRate() {
+        return plugin.getConfig().getInt(gamePath + "resistingRate");
+    }
+
+
+    public boolean getLocationIsExist(String locationPath) {
+        return plugin.getConfig().getBoolean(gamePath + locationPath + "isExist");
+    }
+
+    public boolean getScoreBoardMode() {
+        return plugin.getConfig().getBoolean(gamePath + "scoreBoardEnable");
+    }
+
+    public boolean getWorldBoarderMode() {
+        return plugin.getConfig().getBoolean(gamePath + "worldBoarder.enable");
+    }
+
+    public Location getWorldBoarderLocation() {
+        World world = Bukkit.getWorld(plugin.getConfig().getString(gamePath + "worldBoarder.location.world"));
+        int x = plugin.getConfig().getInt(gamePath + "worldBoarder.location.x");
+        int y = plugin.getConfig().getInt(gamePath + "worldBoarder.location.y");
+        int z = plugin.getConfig().getInt(gamePath + "worldBoarder.location.z");
+        return new Location(world, x, y, z);
+    }
+
+    public WorldBorder getWorldBoarder() {
+        return Bukkit.getWorld(plugin.getConfig().getString(gamePath + "worldBoarder.location.world")).getWorldBorder();
+    }
+
+    public int getWorldBoarderSizePerPlayer() {
+        return plugin.getConfig().getInt(gamePath + "worldBoarder.sizePerPlayer");
+    }
+
+    public double getWorldBoarderOutDamage() {
+        return plugin.getConfig().getDouble(gamePath + "worldBoarder.outDamage");
+    }
+
+    public int getWorldBoarderMinSize() {
+        return plugin.getConfig().getInt(gamePath + "worldBoarder.minSize");
+    }
+
+    public int getWorldBoarderSpeed() {
+        return plugin.getConfig().getInt(gamePath + "worldBoarder.speed");
     }
 
     public Location getLocation(String locationPath) {

@@ -1,6 +1,7 @@
 package freedy.freedyminigamemaker.commands;
 
 import freedy.freedyminigamemaker.FreedyMinigameMaker;
+import freedy.freedyminigamemaker.MiniGame;
 import freedy.freedyminigamemaker.MiniGames;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -25,6 +26,10 @@ public class MinigameCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("§c플레이어만 실행할 수 있습니다");
+            return true;
+        }
         Player player = (Player) sender;
         Location playerLocation = player.getLocation();
         if (args.length != 0) {
@@ -35,10 +40,11 @@ public class MinigameCommand implements CommandExecutor {
                     else player.sendMessage("§c사용법: /fmg join <게임이름> [플레이어]");
                     break;
                 case "quit":
-                    if (args.length == 2) {
-                        miniGames.get(args[1]).remove(player);
-                        miniGames.get(args[1]).stop();
-                    } else player.sendMessage("§c사용법: /fmg quit <게임이름>");
+                    if (miniGames.isJoined(player)) {
+                        MiniGame miniGame = miniGames.getJoined(player);
+                        miniGame.remove(player);
+                        miniGame.stop();
+                    } else player.sendMessage("§c참여중인 미니게임이 없습니다");
                     break;
                 case "create":
                     if (player.hasPermission("freedyminigamemaker.admin")) {
@@ -77,6 +83,8 @@ public class MinigameCommand implements CommandExecutor {
                                             playerLocation.getZ(),
                                             playerLocation.getYaw(),
                                             playerLocation.getPitch());
+
+
                                     player.sendMessage("§6위치가 " + args[1] + " 게임에 대기 위치에 저장 되었습니다");
                                     break;
                                 case "start":
@@ -108,10 +116,23 @@ public class MinigameCommand implements CommandExecutor {
                                         List<String> allowedBlocks = plugin.getConfig().getStringList("miniGames." + args[1] + ".allowedBlocks");
                                         allowedBlocks.add(args[3]);
                                         plugin.getConfig().set("miniGames." + args[1] + ".allowedBlocks", allowedBlocks);
-                                        player.sendMessage("§6" + args[3] + "이 " + args[1] + "게임에 랜덤 블럭 리스트에 저장되었습니다");
                                         plugin.saveConfig();
+                                        player.sendMessage("§6" + args[3] + "이 " + args[1] + "게임에 랜덤 블럭 리스트에 저장되었습니다");
                                     } else {
                                         player.sendMessage("§c사용법: /fmg set <게임이름> addBlock <블럭이름>");
+                                        player.sendMessage("블럭목록: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html");
+                                    }
+                                    break;
+                                case "addDropItem":
+                                    if (args.length == 5) {
+                                        List<String> dropItemList = plugin.getConfig().getStringList("miniGames." + args[1] + ".dropItems.dropList");
+                                        dropItemList.add(args[3]);
+                                        plugin.getConfig().set("miniGames." + args[1] + ".dropItems.dropList", dropItemList);
+                                        plugin.getConfig().set("miniGames." + args[1] + ".dropItems.drop." + args[3], Integer.parseInt(args[4]));
+                                        plugin.saveConfig();
+                                        player.sendMessage("§6" + args[3] + " 블럭이 " + args[1] + "게임에 " + args[4] + " 만큼 떨꿔짐에 저장되었습니다");
+                                    } else {
+                                        player.sendMessage("§c사용법: /fmg set <게임이름> addDropItem <블럭이름> <아이템수>");
                                         player.sendMessage("블럭목록: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html");
                                     }
                                     break;
@@ -140,15 +161,104 @@ public class MinigameCommand implements CommandExecutor {
                                         player.sendMessage("§6최대체력이 " + args[1] + " 게임에 " + team + "에 저장되었습니다");
                                     } else player.sendMessage("§c사용법: /fmg set <게임이름> maxHealth <체력> [팀이름]");
                                     break;
-                                case "timePerPlayer":
-                                    if (args.length == 4) {
-                                        plugin.getConfig().set("miniGames." + args[1] + ".timePerPlayer", Integer.parseInt(args[3]));
-                                        plugin.saveConfig();
+                                case "worldBoarder":
+                                    if (args.length >= 4) {
+                                        switch (args[3]) {
+                                            case "setLocation":
+                                                //String path, String dataType
+                                                miniGames.getEditor(args[1]).setLocation("worldBoarder.location",
+                                                        playerLocation.getWorld().getName(),
+                                                        playerLocation.getX(),
+                                                        playerLocation.getY(),
+                                                        playerLocation.getZ());
+                                                player.sendMessage("§6위치가 " + args[1] + " 월드 보더 중심 위치에 저장 되었습니다");
+                                                break;
+                                            case "enable":
+                                                if (args.length == 5) {
+                                                    plugin.getConfig().set("miniGames." + args[1] + ".worldBoarder.enable", Boolean.parseBoolean(args[4]));
 
-                                        player.sendMessage("§6" + args[3] + "이 " + args[1] + "게임에 플레이어수의비례한죵료타이머배수에 저장되었습니다");
+                                                    plugin.saveConfig();
+                                                    player.sendMessage("§6" + args[4] + "이 " + args[1] + "게임에 참여시 월드 보더 설정 여부에 저장되었습니다");
+                                                } else player.sendMessage("§c사용법: /fmg set <게임이름> worldBoarder enable <true|false>");
+                                                break;
+                                            case "sizePerPlayer":
+                                                if (args.length == 5) {
+                                                    plugin.getConfig().set("miniGames." + args[1] + ".worldBoarder.sizePerPlayer", Integer.parseInt(args[4]));
+                                                    plugin.saveConfig();
 
-                                    } else
-                                        player.sendMessage("§c사용법: /fmg set <게임이름> timePerPlayer <플레이어수의비례한죵료타이머배수>");
+                                                    player.sendMessage("§6" + args[4] + "이 " + args[1] + "게임에 플레이어수의비례한월드보더크기배수에 저장되었습니다");
+
+                                                } else
+                                                    player.sendMessage("§c사용법: /fmg set <게임이름> worldBoarder sizePerPlayer <플레이어수의비례한월드보더크기배수>");
+                                                break;
+                                            case "outDamage":
+                                                if (args.length == 5) {
+                                                    plugin.getConfig().set("miniGames." + args[1] + ".worldBoarder.outDamage", Integer.parseInt(args[4]));
+                                                    plugin.saveConfig();
+
+                                                    player.sendMessage("§6" + args[4] + "이 " + args[1] + "게임에 월드 보더 바깥 데미지에 저장되었습니다");
+
+                                                } else
+                                                    player.sendMessage("§c사용법: /fmg set <게임이름> worldBoarder outDamage <플레이어수의비례한월드보더크기배수>");
+                                                break;
+                                            case "minSize":
+                                                if (args.length == 5) {
+                                                    plugin.getConfig().set("miniGames." + args[1] + ".worldBoarder.minSize", Integer.parseInt(args[4]));
+                                                    plugin.saveConfig();
+
+                                                    player.sendMessage("§6" + args[4] + "이 " + args[1] + "게임에 월드 보더 최소 사이즈에 저장되었습니다");
+
+                                                } else
+                                                    player.sendMessage("§c사용법: /fmg set <게임이름> worldBoarder minSize <최소사이즈>");
+                                                break;
+                                            case "speed":
+                                                if (args.length == 5) {
+                                                    plugin.getConfig().set("miniGames." + args[1] + ".worldBoarder.speed", Integer.parseInt(args[4]));
+                                                    plugin.saveConfig();
+
+                                                    player.sendMessage("§6" + args[4] + "이 " + args[1] + "게임에 월드 보더 감소 속도에 저장되었습니다");
+
+                                                } else
+                                                    player.sendMessage("§c사용법: /fmg set <게임이름> worldBoarder minSize <감소속도>");
+                                                break;
+                                        }
+                                    } else player.sendMessage("§c사용법: /fmg set <게임이름> worldBoarder <enable|sizePerPlayer|setLocation|outDamage|minSize|speed> ...");
+                                    break;
+                                case "scoreBoard":
+                                    if (args.length >= 4) {
+                                        switch (args[3]) {
+                                            case "enable":
+                                                if (args.length == 5) {
+                                                    plugin.getConfig().set("miniGames." + args[1] + ".scoreBoardEnable", Boolean.parseBoolean(args[4]));
+                                                    plugin.saveConfig();
+                                                    player.sendMessage("§6" + args[4] + "이 " + args[1] + "게임에 스코어 보드 사용 여부에 저장되었습니다");
+
+                                                } else player.sendMessage("§c사용법: /fmg set <게임이름> scoreBoard enable <true|false>");
+
+                                                break;
+                                            case "addMsg":
+                                                if (args.length == 5) {
+                                                    miniGames.getEditor(args[1]).addMessage("scoreBoard",
+                                                            ChatColor.translateAlternateColorCodes('&', args[4].replace("{spc}", " ")));
+                                                    player.sendMessage("§6메새지가 " + args[1] + " 스코어보드 목록에 추가 되었습니다");
+                                                } else {
+                                                    player.sendMessage("§c사용법: /fmg set <게임이름> scoreBoard addMsg <메세지>");
+                                                    player.sendMessage("§c참고: <명령줄> 입력란에는 공백을 {spc}으로 넣으세요");
+                                                }
+                                                
+                                                break;
+                                            case "setTitle":
+                                                if (args.length == 5) {
+                                                    plugin.getConfig().set("miniGames." + args[1] + ".scoreBoardTitle", ChatColor.translateAlternateColorCodes('&', args[4].replace("{spc}", " ")));
+                                                    plugin.saveConfig();
+                                                    player.sendMessage("§6스코어보드 제목이 " + args[1] + " 게임에 저장되었습니다");
+                                                } else {
+                                                    player.sendMessage("§c사용법: /fmg set <게임이름> scoreBoard setTitle <메세지>");
+                                                    player.sendMessage("§c참고: <명령줄> 입력란에는 공백을 {spc}으로 넣으세요");
+                                                }
+                                                break;
+                                        }
+                                    } else player.sendMessage("§c사용법: /fmg set <게임이름> scoreBoard <enable|addMsg|setTitle> ...");
                                     break;
                                 case "needClearInv":
                                     if (args.length == 4) {
@@ -177,28 +287,32 @@ public class MinigameCommand implements CommandExecutor {
                                 case "addCmd":
                                     if (args.length == 5) {
                                         List<String> cmdList = plugin.getConfig().getStringList("miniGames." + args[1] + "." + args[3] + "Cmd");
-                                        cmdList.add(args[4].replace("{spc}", " "));
+                                        cmdList.add(ChatColor.translateAlternateColorCodes('&', args[4].replace("{spc}", " ")));
                                         plugin.getConfig().set("miniGames." + args[1] + "." + args[3] + "Cmd", cmdList);
+                                        plugin.saveConfig();
                                         player.sendMessage("§6명령줄이 " + args[1] + " 게임에 " + args[3] + "에 저장되었습니다");
                                     } else {
-                                        player.sendMessage("§c사용법: /fmg set <게임이름> addCmd <start|quit|conStart|conEnd> <명령줄>");
+                                        player.sendMessage("§c사용법: /fmg set <게임이름> addCmd <start|join|quit|conStart|conEnd|winner> <명령줄>");
                                         player.sendMessage("§c참고: <명령줄> 입력란에는 공백을 {spc}으로 넣으세요");
                                     }
                                     break;
                                 case "msg":
                                     if (args.length == 5) {
                                         plugin.getConfig().set("miniGames." + args[1] + "." + args[3] + "Msg", ChatColor.translateAlternateColorCodes('&', args[4].replace("{spc}", " ")));
+                                        plugin.saveConfig();
                                         player.sendMessage("§6메새지가 " + args[1] + " 게임에 " + args[3] + "에 저장되었습니다");
                                     } else {
-                                        player.sendMessage("§c사용법: /fmg set <게임이름> msg <join|quit|start|end|noWinnerEndMsg|redWinEnd|blueWinEnd|beZombie|startTimer|endTimer> <메새지>");
+                                        player.sendMessage("§c사용법: /fmg set <게임이름> msg <join|quit|start|end|noWinnerEndMsg|redWinEnd|blueWinEnd|beZombie|startTimer|endTimer> <메세지>");
                                         player.sendMessage("§c참고: <명령줄> 입력란에는 공백을 {spc}으로 넣으세요");
                                     }
                                     break;
+
                                 default:
-                                    player.sendMessage("§c사용법: /fmg set <게임이름> <wait|start|end|addBlock|gameType|teamMode|maxHealth|timePerPlayer|addCmd|msg> ...");
+                                    player.sendMessage("§c사용법: /fmg set <게임이름> <wait|start|end|addBlock|addDropItem|gameType|teamMode|maxHealth|timePerPlayer|worldBoarder|scoreBoard|addCmd|msg> ...");
+
                             }
                         } else
-                            player.sendMessage("§c사용법: /fmg set <게임이름> <wait|start|end|addBlock|gameType|teamMode|maxHealth|startGameMode|quitGameMode|timePerPlayer|addCmd|msg> ...");
+                            player.sendMessage("§c사용법: /fmg set <게임이름> <wait|start|end|addBlock|addDropItem|gameType|teamMode|maxHealth|startGameMode|quitGameMode|timePerPlayer|worldBoarder|scoreBoard|addCmd|msg> ...");
                     } else player.sendMessage("§c권한이 없습니다.");
                     break;
                 case "list":

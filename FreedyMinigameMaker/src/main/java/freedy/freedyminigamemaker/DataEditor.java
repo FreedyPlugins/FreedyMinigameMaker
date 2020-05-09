@@ -45,7 +45,7 @@ public class DataEditor {
         plugin.getConfig().set(gamePath + "redTeamStartMaxHeart", 20.0);
         plugin.getConfig().set(gamePath + "blueTeamStartMaxHeart", 20.0);
         plugin.getConfig().set(gamePath + "timePerPlayer", 1);
-        plugin.getConfig().set(gamePath + "joinMsg", "§6{player}이(가) {game}에 참여했습니다");
+        plugin.getConfig().set(gamePath + "joinMsg", "§6{player}이(가) {game}에 참여했습니다 §7({playerAmount}/{maxPlayers})");
         plugin.getConfig().set(gamePath + "quitMsg", "§6{player}이(가) 떠났습니다");
         plugin.getConfig().set(gamePath + "startMsg", "§a{game}이(가) 시작되었어요!");
         plugin.getConfig().set(gamePath + "noWinnerEndMsg", "§a{game}이(가) 종료되었어요, 무승부입니다!");
@@ -56,10 +56,14 @@ public class DataEditor {
         plugin.getConfig().set(gamePath + "endTimerMsg", "§7{time}초 후에 종료...");
         plugin.getConfig().set(gamePath + "morePlayerMsg", "§c플레이어를 더 기다리고 있습니다...");
         plugin.getConfig().set(gamePath + "beZombieMsg", "§c{player}이(가) {killer}에 의해 좀비가 되었습니다!");
+        plugin.getConfig().set(gamePath + "repeatTime", -1);
+        plugin.getConfig().set(gamePath + "repeatCmd", new ArrayList<>());
         plugin.getConfig().set(gamePath + "startCmd", new ArrayList<>());
-        plugin.getConfig().set(gamePath + "ConStartCmd", new ArrayList<>());
+        plugin.getConfig().set(gamePath + "conStartCmd", new ArrayList<>());
+        plugin.getConfig().set(gamePath + "joinCmd", new ArrayList<>());
         plugin.getConfig().set(gamePath + "quitCmd", new ArrayList<>());
         plugin.getConfig().set(gamePath + "conEndCmd", new ArrayList<>());
+        plugin.getConfig().set(gamePath + "winnerCmd", new ArrayList<>());
         List<String> gameList = plugin.getConfig().getStringList("gameList");
         gameList.add(gameName);
         plugin.getConfig().set("gameList", gameList);
@@ -75,6 +79,7 @@ public class DataEditor {
         plugin.getConfig().set(gamePath + locationPath + "." + locNum + ".z", z);
         plugin.getConfig().set(gamePath + locationPath + "." + locNum + ".yaw", yaw);
         plugin.getConfig().set(gamePath + locationPath + "." + locNum + ".pitch", pitch);
+        plugin.getConfig().set(gamePath + locationPath + "isExist", true);
         plugin.saveConfig();
     }
 
@@ -85,6 +90,25 @@ public class DataEditor {
         plugin.getConfig().set(gamePath + locationPath + ".z", z);
         plugin.getConfig().set(gamePath + locationPath + ".yaw", yaw);
         plugin.getConfig().set(gamePath + locationPath + ".pitch", pitch);
+
+        plugin.getConfig().set(gamePath + locationPath + "isExist", true);
+        plugin.saveConfig();
+    }
+
+
+
+    public void setLocation(String locationPath, String world, double x, double y, double z) {
+        plugin.getConfig().set(gamePath + locationPath + ".world", world);
+        plugin.getConfig().set(gamePath + locationPath + ".x", x);
+        plugin.getConfig().set(gamePath + locationPath + ".y", y);
+        plugin.getConfig().set(gamePath + locationPath + ".z", z);
+        plugin.saveConfig();
+    }
+
+    public void addMessage(String messagePath, String message) {
+        List<String> messageList = plugin.getConfig().getStringList(gamePath + messagePath);
+        messageList.add(message);
+        plugin.getConfig().set(gamePath + messagePath, messageList);
         plugin.saveConfig();
     }
 

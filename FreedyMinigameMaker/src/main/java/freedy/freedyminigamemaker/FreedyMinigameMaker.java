@@ -18,10 +18,12 @@ public final class FreedyMinigameMaker extends JavaPlugin {
         miniGames = new MiniGames(this);
         getConfig().options().copyDefaults();
         saveDefaultConfig();
+        getServer().getPluginManager().registerEvents(new DamageEvent(this), this);
+        getServer().getPluginManager().registerEvents(new BreakEvent(this), this);
         getServer().getPluginManager().registerEvents(new QuitEvent(this), this);
         getServer().getPluginManager().registerEvents(new DeathEvent(this), this);
-        getServer().getPluginManager().registerEvents(new MoveEvent(this), this);
         getCommand("fmg").setExecutor(new MinigameCommand(this));
+        getCommand("fut").setExecutor(new MinigameUtilities(this));
 
     }
 

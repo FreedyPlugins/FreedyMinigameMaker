@@ -39,11 +39,15 @@ public class DeathEvent implements Listener {
                             miniGame.teamPlayers.get("blue").remove(player);
                             miniGame.teamPlayers.get("red").add(player);
 
-                        } else if (miniGame.teamPlayers.get("red").contains(playerName)) {
+                        } else if (miniGame.teamPlayers.get("red").contains(player)) {
                             miniGame.remove(player);
                         }
                         break;
+                    default:
+                        miniGame.remove(player);
+                        miniGame.stop();
                 }
+
             }
 
         }
