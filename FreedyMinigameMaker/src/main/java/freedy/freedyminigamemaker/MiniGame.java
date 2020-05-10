@@ -6,6 +6,7 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.WorldBorder;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
@@ -148,13 +149,13 @@ public class MiniGame extends DataStore {
                                         .replace("{game}", gameName)
                                         .replace("{maxPlayers}", String.valueOf(getMaxStartPlayers()))
                                         .replace("{playerAmount}", String.valueOf(playerList.size())));
+                            if (getLocationIsExist("waitLocation")) player.teleport(getLocation("waitLocation"));
+                            setScoreBoardAll(0);
                             for (String cmd : getMessageList("joinCmd")) {
                                 Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd
                                         .replace("{player}", playerName)
                                         .replace("{game}", gameName));
                             }
-                            if (getLocationIsExist("waitLocation")) player.teleport(getLocation("waitLocation"));
-                            setScoreBoardAll(0);
                             if (!isWaiting && playerList.size() >= getMaxStartPlayers()) startChecker();
 
                         } else player.sendMessage("§c" + "게임이 이미 시작되었습니다");
@@ -516,6 +517,14 @@ public class MiniGame extends DataStore {
 
     }
 
+    public void openInv(Player player, String invName) {
+        player.openInventory(getInventory(invName));
+    }
+
+    public boolean isExistingTitle(String title) {
+        return getInventoryTitleList().contains(title);
+    }
+
     public String calc(String string) {
 
 
@@ -546,8 +555,8 @@ public class MiniGame extends DataStore {
 
         String area = StringUtils.substringBetween(string, "{random(", ")}");
         if (area == null) return string;
-        List<String> stringList = new ArrayList<String>(Arrays.asList(area.split("-")));
-        String result = stringList.get(ThreadLocalRandom.current().nextInt(1, stringList.size() + 1));
+        List<String> stringList = new ArrayList<>(Arrays.asList(area.split("-")));
+        String result = stringList.get(ThreadLocalRandom.current().nextInt(1, stringList.size()));
         return string.replace("{random("+ area + ")}", result);
     }
 

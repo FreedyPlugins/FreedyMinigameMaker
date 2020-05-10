@@ -260,6 +260,50 @@ public class MinigameCommand implements CommandExecutor {
                                         }
                                     } else player.sendMessage("§c사용법: /fmg set <게임이름> scoreBoard <enable|addMsg|setTitle> ...");
                                     break;
+                                case "inv":
+                                    if (args.length >= 4) {
+                                        switch (args[3]) {
+                                            case "addItem":
+                                                if (args.length == 7) {
+
+                                                    plugin.getConfig().set("miniGames." + args[1] + ".inventories." + args[4] + ".items." + args[5]
+                                                            , player.getInventory().getItemInMainHand());
+
+                                                    List<String> cmdList = plugin.getConfig().getStringList("miniGames." + args[1] + ".inventories." + args[4] + "." + args[5] + "Cmd");
+                                                    cmdList.add(ChatColor.translateAlternateColorCodes('&', args[6]
+                                                            .replace("{spc}", " ")));
+                                                    plugin.getConfig().set("miniGames." + args[1] + ".inventories." + args[4] + "." + args[5] + "Cmd", cmdList);
+                                                    plugin.saveConfig();
+                                                    player.sendMessage("§6명령줄이 " + args[1] + "게임의 메뉴 " + args[4] + "의 " + args[5] + "번줄에 손에 들고 있던 아이템과 저장되었습니다");
+                                                } else if (args.length == 6) {
+                                                    plugin.getConfig().set("miniGames." + args[1] + ".inventories." + args[4] + ".items." + args[5]
+                                                            , player.getInventory().getItemInMainHand());
+                                                    plugin.saveConfig();
+                                                    player.sendMessage("§6아이템이 " + args[1] + "게임의 메뉴 " + args[4] + "의 " + args[5] + "번줄에 저장되었습니다");
+
+                                                } else {
+                                                    player.sendMessage("§c사용법: /fmg set <게임이름> inv addItem <메뉴이름> <아이템위치> [명령줄]");
+                                                    player.sendMessage("§c참고: <명령줄> 입력란에는 공백을 {spc}으로 넣으세요");
+                                                }
+
+                                                break;
+                                            case "create":
+                                                if (args.length == 7) {
+                                                    plugin.getConfig().set("miniGames." + args[1] + ".inventories." + args[4] + ".title"
+                                                            , ChatColor.translateAlternateColorCodes('&', args[6].replace("{spc}", " ")));
+                                                    plugin.getConfig().set("miniGames." + args[1] + ".inventories." + args[4] + ".size"
+                                                            , Integer.parseInt(args[5]));
+                                                    List<String> inventoryList = plugin.getConfig().getStringList("miniGames." + args[1] + ".inventoryList");
+                                                    if (!inventoryList.contains(args[4])) inventoryList.add(args[4]);
+                                                    plugin.getConfig().set("miniGames." + args[1] + ".inventoryList", inventoryList);
+                                                    plugin.saveConfig();
+                                                    player.sendMessage("§6메뉴가 " + args[1] + " 게임에 저장되었습니다");
+                                                } else player.sendMessage("§c사용법: /fmg set <게임이름> inv create <메뉴이름> <9|18|27|36|45|54> <타이틀>");
+                                                break;
+                                            default: player.sendMessage("§c사용법: /fmg set <게임이름> inv <addItem|create> ...");
+                                        }
+                                    } else player.sendMessage("§c사용법: /fmg set <게임이름> inv <addItem|create> ...");
+                                    break;
                                 case "needClearInv":
                                     if (args.length == 4) {
                                         plugin.getConfig().set("miniGames." + args[1] + ".needClearInv", Boolean.parseBoolean(args[3]));
@@ -302,7 +346,7 @@ public class MinigameCommand implements CommandExecutor {
                                         plugin.saveConfig();
                                         player.sendMessage("§6메새지가 " + args[1] + " 게임에 " + args[3] + "에 저장되었습니다");
                                     } else {
-                                        player.sendMessage("§c사용법: /fmg set <게임이름> msg <join|quit|start|end|noWinnerEndMsg|redWinEnd|blueWinEnd|beZombie|startTimer|endTimer> <메세지>");
+                                        player.sendMessage("§c사용법: /fmg set <게임이름> msg <join|quit|start|end|noWinnerEndMsg|redWinEnd|blueWinEnd|beZombie|extraDamage|dropItem|resistingDamage|startTimer|endTimer> <메세지>");
                                         player.sendMessage("§c참고: <명령줄> 입력란에는 공백을 {spc}으로 넣으세요");
                                     }
                                     break;

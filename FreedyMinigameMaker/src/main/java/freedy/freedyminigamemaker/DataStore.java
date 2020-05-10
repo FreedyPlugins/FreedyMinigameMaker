@@ -1,6 +1,8 @@
 package freedy.freedyminigamemaker;
 
 import org.bukkit.*;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -88,6 +90,10 @@ public class DataStore extends DataEditor {
 
     public int getDrops(String material) {
         return plugin.getConfig().getInt(gamePath + "dropItems.drop." + material);
+    }
+
+    public int getDropRate() {
+        return plugin.getConfig().getInt(gamePath + "dropRate");
     }
 
     public boolean getNeedClearInv() {
@@ -187,7 +193,47 @@ public class DataStore extends DataEditor {
         return locationList;
     }
 
+    public String getInventoryTitle(String invName) {
+        return plugin.getConfig().getString(gamePath + "inventories." + invName + ".title");
+    }
 
+    public List<String> getInventoryCmd(String invName, int index) {
+        return plugin.getConfig().getStringList(gamePath + "inventories." + invName + "." + index + "Cmd");
+    }
+
+    public List<String> getCmdByTitle(String title, int index) {
+        for (String invName : getInventoryList()) {
+            if (getInventoryTitle(invName).equals(title))
+                return getInventoryCmd(invName, index);
+        }
+        return null;
+    }
+
+    public List<String> getInventoryList() {
+        return plugin.getConfig().getStringList(gamePath + "inventoryList");
+    }
+
+    public List<String> getInventoryTitleList() {
+        List<String> inventoryList = getInventoryList();
+        List<String> titleList = new ArrayList<>();
+        for (String invName : inventoryList)
+            titleList.add(plugin.getConfig().getString(gamePath + "inventories." + invName + ".title"));
+        return titleList;
+    }
+
+
+    public Inventory getInventory(String invName) {
+        if (plugin.getConfig().getStringList(gamePath + "inventoryList").contains(invName)) {
+            int size = plugin.getConfig().getInt(gamePath + "inventories." + invName + ".size");
+            String title = plugin.getConfig().getString(gamePath + "inventories." + invName + ".title");
+            Inventory inventory = Bukkit.createInventory(null, size, title);
+            for (int i = 0; i < size; i++) {
+                ItemStack itemStack = plugin.getConfig().getItemStack(gamePath + "inventories." + invName + ".items." + i);
+                if (itemStack != null) inventory.setItem(i, itemStack);
+            }
+            return inventory;
+        } else return Bukkit.createInventory(null, 27, "이 인벤토리는 존재하지 않음");
+    }
 
 
 

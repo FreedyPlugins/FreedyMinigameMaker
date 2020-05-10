@@ -84,9 +84,17 @@ public class MinigameUtilities implements CommandExecutor {
                             default: sender.sendMessage("§c사용법: /fut <player> set <extraDamageMode|resistingDamageMode|dropItemMode> ...");
                         }
                         break;
-                    default: sender.sendMessage("§c사용법: /fut <player> <sendMsg|set> ...");
+                    case "openGui":
+                        if (args.length >= 3) {
+                            miniGame.openInv(player, args[2]);
+                        } else sender.sendMessage("§c사용법: /fut <player> openGui <메뉴이름>");
+                        break;
+                    case "closeGui":
+                            player.closeInventory();
+                        break;
+                    default: sender.sendMessage("§c사용법: /fut <player> <sendMsg|set|openGui> ...");
                 }
-            } else sender.sendMessage("§c사용법: /fut <player> <sendMsg|set> ...");
+            } else sender.sendMessage("§c사용법: /fut <player> <sendMsg|set|openGui> ...");
         } else sender.sendMessage("§c권한이 없습니다");
         return true;
     }
