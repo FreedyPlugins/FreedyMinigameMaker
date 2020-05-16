@@ -34,10 +34,29 @@ public class MinigameCommand implements CommandExecutor {
         Location playerLocation = player.getLocation();
         if (args.length != 0) {
             switch (args[0]) {
+                case "gui":
+                    if (args.length == 2) miniGames.getNoneGame().openInv(player, args[1]);
+                    else if (args.length == 3) miniGames.getNoneGame().openInv(Bukkit.getPlayer(args[2]), args[1]);
+                    else player.sendMessage("§c사용법: /fmg gui <메뉴이름> [플레이어]");
+
+                    break;
                 case "join":
                     if (args.length == 2) miniGames.get(args[1]).add(player);
                     else if (args.length == 3) miniGames.get(args[1]).add(Bukkit.getPlayer(args[2]));
                     else player.sendMessage("§c사용법: /fmg join <게임이름> [플레이어]");
+                    break;
+                case "joinAll":
+                    if (args.length == 2) {
+                        for (Player p : Bukkit.getOnlinePlayers()) {
+                            miniGames.get(args[1]).add(p);
+                            miniGames.get(args[1]).getPlayerData(p).dropItemMode = true;
+                        }
+                    } else player.sendMessage("§c사용법: /fmg joinAll <게임이름>");
+                    break;
+                case "quitAll":
+                    if (args.length == 2) {
+                        miniGames.get(args[1]).removeAll(miniGames.get(args[1]).playerList);
+                    } else player.sendMessage("§c사용법: /fmg quitAll <게임이름>");
                     break;
                 case "quit":
                     if (miniGames.isJoined(player)) {
@@ -266,17 +285,17 @@ public class MinigameCommand implements CommandExecutor {
                                             case "addItem":
                                                 if (args.length == 7) {
 
-                                                    plugin.getConfig().set("miniGames." + args[1] + ".inventories." + args[4] + ".items." + args[5]
+                                                    plugin.getConfig().set("inventories." + args[4] + ".items." + args[5]
                                                             , player.getInventory().getItemInMainHand());
 
-                                                    List<String> cmdList = plugin.getConfig().getStringList("miniGames." + args[1] + ".inventories." + args[4] + "." + args[5] + "Cmd");
+                                                    List<String> cmdList = plugin.getConfig().getStringList("inventories." + args[4] + "." + args[5] + "Cmd");
                                                     cmdList.add(ChatColor.translateAlternateColorCodes('&', args[6]
                                                             .replace("{spc}", " ")));
-                                                    plugin.getConfig().set("miniGames." + args[1] + ".inventories." + args[4] + "." + args[5] + "Cmd", cmdList);
+                                                    plugin.getConfig().set("inventories." + args[4] + "." + args[5] + "Cmd", cmdList);
                                                     plugin.saveConfig();
                                                     player.sendMessage("§6명령줄이 " + args[1] + "게임의 메뉴 " + args[4] + "의 " + args[5] + "번줄에 손에 들고 있던 아이템과 저장되었습니다");
                                                 } else if (args.length == 6) {
-                                                    plugin.getConfig().set("miniGames." + args[1] + ".inventories." + args[4] + ".items." + args[5]
+                                                    plugin.getConfig().set("inventories." + args[4] + ".items." + args[5]
                                                             , player.getInventory().getItemInMainHand());
                                                     plugin.saveConfig();
                                                     player.sendMessage("§6아이템이 " + args[1] + "게임의 메뉴 " + args[4] + "의 " + args[5] + "번줄에 저장되었습니다");
@@ -289,13 +308,13 @@ public class MinigameCommand implements CommandExecutor {
                                                 break;
                                             case "create":
                                                 if (args.length == 7) {
-                                                    plugin.getConfig().set("miniGames." + args[1] + ".inventories." + args[4] + ".title"
+                                                    plugin.getConfig().set("inventories." + args[4] + ".title"
                                                             , ChatColor.translateAlternateColorCodes('&', args[6].replace("{spc}", " ")));
-                                                    plugin.getConfig().set("miniGames." + args[1] + ".inventories." + args[4] + ".size"
+                                                    plugin.getConfig().set("inventories." + args[4] + ".size"
                                                             , Integer.parseInt(args[5]));
-                                                    List<String> inventoryList = plugin.getConfig().getStringList("miniGames." + args[1] + ".inventoryList");
+                                                    List<String> inventoryList = plugin.getConfig().getStringList("inventoryList");
                                                     if (!inventoryList.contains(args[4])) inventoryList.add(args[4]);
-                                                    plugin.getConfig().set("miniGames." + args[1] + ".inventoryList", inventoryList);
+                                                    plugin.getConfig().set("inventoryList", inventoryList);
                                                     plugin.saveConfig();
                                                     player.sendMessage("§6메뉴가 " + args[1] + " 게임에 저장되었습니다");
                                                 } else player.sendMessage("§c사용법: /fmg set <게임이름> inv create <메뉴이름> <9|18|27|36|45|54> <타이틀>");

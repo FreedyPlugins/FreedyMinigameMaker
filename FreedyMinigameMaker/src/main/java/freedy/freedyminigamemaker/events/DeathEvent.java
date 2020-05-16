@@ -24,32 +24,33 @@ public class DeathEvent implements Listener {
         Player player = event.getEntity().getPlayer();
         String playerName = player.getName();
         Player killer = player.getKiller();
-        if (killer != null) {
 
-            String killerName = killer.getName();
+        String killerName;
 
-            if (miniGames.isJoined(player)) {
-                MiniGame miniGame = miniGames.getJoined(player);
-                switch (miniGame.getGameType()) {
-                    case "zombieMode":
-                        if (miniGame.teamPlayers.get("blue").contains(player)) {
-                            for (Player p : miniGame.playerList)
-                                p.sendMessage(miniGame.getMessage("beZombieMsg").replace("{player}", playerName).replace("{killer}", killerName));
+        if (killer != null) killerName = killer.getName();
+        else killerName = "";
 
-                            miniGame.teamPlayers.get("blue").remove(player);
-                            miniGame.teamPlayers.get("red").add(player);
+        if (miniGames.isJoined(player)) {
+            MiniGame miniGame = miniGames.getJoined(player);
+            switch (miniGame.getGameType()) {
+                case "zombieMode":
+                    if (miniGame.teamPlayers.get("blue").contains(player)) {
+                        for (Player p : miniGame.playerList)
+                            p.sendMessage(miniGame.getMessage("beZombieMsg").replace("{player}", playerName).replace("{killer}", killerName));
 
-                        } else if (miniGame.teamPlayers.get("red").contains(player)) {
-                            miniGame.remove(player);
-                        }
-                        break;
-                    default:
+                        miniGame.teamPlayers.get("blue").remove(player);
+                        miniGame.teamPlayers.get("red").add(player);
+
+                    } else if (miniGame.teamPlayers.get("red").contains(player)) {
                         miniGame.remove(player);
-                        miniGame.stop();
-                }
-
+                    }
+                    break;
+                default:
+                    miniGame.remove(player);
+                    miniGame.stop();
             }
 
         }
+
     }
 }

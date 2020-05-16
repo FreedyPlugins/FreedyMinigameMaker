@@ -125,6 +125,10 @@ public class DataStore extends DataEditor {
         return plugin.getConfig().getBoolean(gamePath + locationPath + "isExist");
     }
 
+    public boolean getSafeWorldBoarderFinderMode() {
+        return plugin.getConfig().getBoolean(gamePath + "safeWorldBoarderFinderMode");
+    }
+
     public boolean getScoreBoardMode() {
         return plugin.getConfig().getBoolean(gamePath + "scoreBoardEnable");
     }
@@ -162,7 +166,9 @@ public class DataStore extends DataEditor {
     }
 
     public Location getLocation(String locationPath) {
-        World world = Bukkit.getWorld(plugin.getConfig().getString(gamePath + "." + locationPath + ".world"));
+        String worldName = plugin.getConfig().getString(gamePath + "." + locationPath + ".world");
+        if (worldName == null) return null;
+        World world = Bukkit.getWorld(worldName);
         double x = Double.parseDouble(plugin.getConfig().getString(gamePath + "." + locationPath + ".x"));
         double y = Double.parseDouble(plugin.getConfig().getString(gamePath + "." + locationPath + ".y"));
         double z = Double.parseDouble(plugin.getConfig().getString(gamePath + "." + locationPath + ".z"));
@@ -172,7 +178,9 @@ public class DataStore extends DataEditor {
     }
 
     public Location getLocation(String locationPath, int locationNumber) {
-        World world = Bukkit.getWorld(plugin.getConfig().getString(gamePath + locationPath + "." + locationNumber + ".world"));
+        String worldName = plugin.getConfig().getString(gamePath + locationPath + "." + locationNumber + ".world");
+        if (worldName == null) return null;
+        World world = Bukkit.getWorld(worldName);
         double x = Double.parseDouble(plugin.getConfig().getString(gamePath + locationPath + "." + locationNumber + ".x"));
         double y = Double.parseDouble(plugin.getConfig().getString(gamePath + locationPath + "." + locationNumber + ".y"));
         double z = Double.parseDouble(plugin.getConfig().getString(gamePath + locationPath + "." + locationNumber + ".z"));
@@ -194,11 +202,11 @@ public class DataStore extends DataEditor {
     }
 
     public String getInventoryTitle(String invName) {
-        return plugin.getConfig().getString(gamePath + "inventories." + invName + ".title");
+        return plugin.getConfig().getString("inventories." + invName + ".title");
     }
 
     public List<String> getInventoryCmd(String invName, int index) {
-        return plugin.getConfig().getStringList(gamePath + "inventories." + invName + "." + index + "Cmd");
+        return plugin.getConfig().getStringList("inventories." + invName + "." + index + "Cmd");
     }
 
     public List<String> getCmdByTitle(String title, int index) {
@@ -210,25 +218,24 @@ public class DataStore extends DataEditor {
     }
 
     public List<String> getInventoryList() {
-        return plugin.getConfig().getStringList(gamePath + "inventoryList");
+        return plugin.getConfig().getStringList("inventoryList");
     }
 
     public List<String> getInventoryTitleList() {
         List<String> inventoryList = getInventoryList();
         List<String> titleList = new ArrayList<>();
         for (String invName : inventoryList)
-            titleList.add(plugin.getConfig().getString(gamePath + "inventories." + invName + ".title"));
+            titleList.add(plugin.getConfig().getString("inventories." + invName + ".title"));
         return titleList;
     }
 
-
     public Inventory getInventory(String invName) {
-        if (plugin.getConfig().getStringList(gamePath + "inventoryList").contains(invName)) {
-            int size = plugin.getConfig().getInt(gamePath + "inventories." + invName + ".size");
-            String title = plugin.getConfig().getString(gamePath + "inventories." + invName + ".title");
+        if (plugin.getConfig().getStringList("inventoryList").contains(invName)) {
+            int size = plugin.getConfig().getInt("inventories." + invName + ".size");
+            String title = plugin.getConfig().getString("inventories." + invName + ".title");
             Inventory inventory = Bukkit.createInventory(null, size, title);
             for (int i = 0; i < size; i++) {
-                ItemStack itemStack = plugin.getConfig().getItemStack(gamePath + "inventories." + invName + ".items." + i);
+                ItemStack itemStack = plugin.getConfig().getItemStack("inventories." + invName + ".items." + i);
                 if (itemStack != null) inventory.setItem(i, itemStack);
             }
             return inventory;

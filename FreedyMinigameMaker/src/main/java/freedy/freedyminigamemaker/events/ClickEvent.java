@@ -25,8 +25,7 @@ public class ClickEvent implements Listener {
     @EventHandler
     public void onClick(InventoryClickEvent event) {
         Player player = (Player) event.getWhoClicked();
-        if (miniGames.isJoined(player)) {
-            MiniGame miniGame = miniGames.getJoined(player);
+            MiniGame miniGame = miniGames.getNoneGame();
             String title = event.getInventory().getTitle();
             int index = event.getSlot();
             if (miniGame.isExistingTitle(title)) {
@@ -35,10 +34,9 @@ public class ClickEvent implements Listener {
                 for (String cmd : cmdList) {
                     if (cmd != null)
                         Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd
-                                .replace("{player}", player.getName())
-                                .replace("{playerMode}", miniGame.getMode(player)));
+                                .replace("{player}", player.getName()));
                 }
             }
-        }
+
     }
 }

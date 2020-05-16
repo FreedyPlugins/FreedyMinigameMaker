@@ -9,12 +9,14 @@ public class MiniGames {
 
     FreedyMinigameMaker plugin;
     Map<String, MiniGame> miniGames;
+    MiniGame noneGame; // existing for compare if game exist or like something
 
     public MiniGames(FreedyMinigameMaker plugin) {
         this.plugin = plugin;
         miniGames = new HashMap<>();
         for (String gameName : plugin.getConfig().getStringList("gameList"))
             add(gameName);
+        noneGame = new MiniGame(plugin, "none");
     }
 
     public void add(String gameName) {
@@ -55,6 +57,10 @@ public class MiniGames {
         MiniGame miniGame = miniGames.get(gameName);
         if (miniGame == null) miniGame = new MiniGame(plugin, gameName);
         return miniGame;
+    }
+
+    public MiniGame getNoneGame() {
+        return noneGame;
     }
 
 

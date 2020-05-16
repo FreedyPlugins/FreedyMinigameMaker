@@ -1,12 +1,10 @@
 package freedy.freedyminigamemaker;
 
 import org.apache.commons.lang.StringUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.WorldBorder;
+import org.bukkit.*;
+import org.bukkit.block.Biome;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
@@ -27,6 +25,7 @@ public class MiniGame extends DataStore {
 
     int taskId;
     BukkitScheduler scheduler = getServer().getScheduler();
+    ConsoleCommandSender console = getServer().getConsoleSender();
 
 
     public List<Player> playerList;
@@ -67,6 +66,13 @@ public class MiniGame extends DataStore {
         else return getMessage("none");
     }
 
+    public String getRealMode(Player player) {
+        if (getPlayerData(player).extraDamageMode) return "extraDamage";
+        else if (getPlayerData(player).dropItemMode) return "dropItem";
+        else if (getPlayerData(player).resistingDamageMode) return "resistingDamage";
+        else return "none";
+    }
+
 
 
     void stopChecker() {
@@ -94,13 +100,24 @@ public class MiniGame extends DataStore {
 
                 repeaterTimer++;
                 if (repeaterTimer == getRepeatTime()) {
-                    for (String cmd : getMessageList("repeatCmd"))
-                        Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd
+                    for (String cmd : getMessageList("repeatCmd")) {
+                        if (cmd.contains("{allPlayer}")) {
+                            for (Player p : playerList)
+                                Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd
+                                        .replace("{allPlayer}", p.getName())
+                                        .replace("{playerMode}", getMode(p))
+                                        .replace("{game}", gameName)
+                                        .replace("{player}", playerList.get(0).getName())
+                                        .replace("{playerAmount}", String.valueOf(playerAmount))
+                                        .replace("{leftTime}", String.valueOf(endTime - waitTime))
+                                        .replace("{playerSize}", String.valueOf(playerList.size())));
+                        } else Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd
                                 .replace("{game}", gameName)
                                 .replace("{player}", playerList.get(0).getName())
                                 .replace("{playerAmount}", String.valueOf(playerAmount))
                                 .replace("{leftTime}", String.valueOf(endTime - waitTime))
                                 .replace("{playerSize}", String.valueOf(playerList.size())));
+                    }
                     repeaterTimer = 0;
 
                 }
@@ -143,16 +160,19 @@ public class MiniGame extends DataStore {
 
                             playerList.add(player);
                             playerDataList.add(new PlayerData(player));
-                            for (Player p : playerList)
-                                p.sendMessage(getMessage("joinMsg")
-                                        .replace("{player}", playerName)
-                                        .replace("{game}", gameName)
-                                        .replace("{maxPlayers}", String.valueOf(getMaxStartPlayers()))
-                                        .replace("{playerAmount}", String.valueOf(playerList.size())));
+                            if (getMessage("joinMsg") != null)
+                                for (Player p : playerList)
+                                    p.sendMessage(getMessage("joinMsg")
+                                            .replace("{player}", playerName)
+                                            .replace("{game}", gameName)
+                                            .replace("{maxPlayers}", String.valueOf(getMaxStartPlayers()))
+                                            .replace("{playerAmount}", String.valueOf(playerList.size())));
                             if (getLocationIsExist("waitLocation")) player.teleport(getLocation("waitLocation"));
                             setScoreBoardAll(0);
                             for (String cmd : getMessageList("joinCmd")) {
                                 Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd
+                                        .replace("{maxPlayers}", String.valueOf(getMaxStartPlayers()))
+                                        .replace("{playerAmount}", String.valueOf(playerList.size()))
                                         .replace("{player}", playerName)
                                         .replace("{game}", gameName));
                             }
@@ -178,13 +198,19 @@ public class MiniGame extends DataStore {
 
         String playerName = player.getName();
         removeScoreBoard(player);
-        for (Player p : playerList)
-            p.sendMessage(getMessage("quitMsg").replace("{player}", playerName));
+        if (getMessage("quitMsg") != null)
+            for (Player p : playerList)
+                p.sendMessage(getMessage("quitMsg")
+                        .replace("{maxPlayers}", String.valueOf(getMaxStartPlayers()))
+                        .replace("{playerAmount}", String.valueOf(playerList.size()))
+                        .replace("{player}", playerName));
         for (String cmd : getMessageList("quitCmd"))
             Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd
                     .replace("{player}", playerName)
+                    .replace("{maxPlayers}", String.valueOf(getMaxStartPlayers()))
+                    .replace("{playerAmount}", String.valueOf(playerList.size()))
                     .replace("{game}", gameName));
-        player.teleport(getLocation("endLocation"));
+        if (getLocationIsExist("endLocation")) player.teleport(getLocation("endLocation"));
         player.getInventory().clear();
         player.updateInventory();
         if (getQuitGameMode()) player.setGameMode(GameMode.valueOf(getDefaultEndGameMode()));
@@ -216,6 +242,7 @@ public class MiniGame extends DataStore {
         isWaiting = false;
         waitTime = 0;
         repeaterTimer = 0;
+        playerAmount = 0;
         playerList = new ArrayList<>();
         playerDataList = new ArrayList<>();
         teamPlayers.replaceAll((n, v) -> new ArrayList<>());
@@ -235,7 +262,9 @@ public class MiniGame extends DataStore {
         끝나지 말아야 하는 경우
 
          */
-        if (isWaiting && playerList.size() < getMaxStartPlayers())
+        if (playerList.size() == 0)
+            return false;
+        else if (isWaiting && playerList.size() < getMaxStartPlayers())
             return false;
         else if (getGameType().equalsIgnoreCase("zombieMode") && (teamPlayers.get("red").isEmpty() || teamPlayers.get("blue").isEmpty()))
             return false;
@@ -283,10 +312,10 @@ public class MiniGame extends DataStore {
 
                     for (Player player : teamPlayers.get("blue"))
                         for (String cmd : getMessageList("winnerCmd"))
-                            Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), calc(cmd
+                            Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), calc(randomNumber(cmd
                                     .replace("{player}", player.getName())
                                     .replace("{playerAmount}", String.valueOf(playerAmount))
-                                    .replace("{game}", gameName)));
+                                    .replace("{game}", gameName))));
 
 
                 }
@@ -294,10 +323,10 @@ public class MiniGame extends DataStore {
                     showingEndMsg = getMessage("redWinEndMsg").replace("{game}", gameName);
                     for (Player player : teamPlayers.get("red"))
                         for (String cmd : getMessageList("winnerCmd"))
-                            Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), calc(cmd
+                            Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), calc(randomNumber(cmd
                                     .replace("{player}", player.getName())
                                     .replace("{playerAmount}", String.valueOf(playerAmount))
-                                    .replace("{game}", gameName)));
+                                    .replace("{game}", gameName))));
                 }
                 else showingEndMsg = getMessage("noWinnerEndMsg").replace("{game}", gameName);
                 break;
@@ -308,19 +337,19 @@ public class MiniGame extends DataStore {
                         showingEndMsg = getMessage("redWinEndMsg").replace("{game}", gameName);
                         for (Player player : teamPlayers.get("red"))
                             for (String cmd : getMessageList("winnerCmd"))
-                                Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), calc(cmd
+                                Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), calc(randomNumber(cmd
                                         .replace("{player}", player.getName())
                                         .replace("{playerAmount}", String.valueOf(playerAmount))
-                                        .replace("{game}", gameName)));
+                                        .replace("{game}", gameName))));
                     }
                     else if (teamPlayers.get("red").size() == 0) {
                         showingEndMsg = getMessage("blueWinEndMsg").replace("{game}", gameName);
                         for (Player player : teamPlayers.get("blue"))
                             for (String cmd : getMessageList("winnerCmd"))
-                                Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), calc(cmd
+                                Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), calc(randomNumber(cmd
                                         .replace("{player}", player.getName())
                                         .replace("{playerAmount}", String.valueOf(playerAmount))
-                                        .replace("{game}", gameName)));
+                                        .replace("{game}", gameName))));
                     }
 
                     else showingEndMsg = getMessage("noWinnerEndMsg").replace("{game}", gameName);
@@ -332,10 +361,10 @@ public class MiniGame extends DataStore {
                                 .replace("{player}", playerList.get(0).getName())
                                 .replace("{playerAmount}", String.valueOf(playerAmount));
                             for (String cmd : getMessageList("winnerCmd"))
-                                Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), calc(cmd
+                                Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), calc(randomNumber(cmd
                                         .replace("{player}", playerList.get(0).getName())
                                         .replace("{playerAmount}", String.valueOf(playerAmount))
-                                        .replace("{game}", gameName)));
+                                        .replace("{game}", gameName))));
                     }
                     else showingEndMsg = getMessage("noWinnerEndMsg").replace("{game}", gameName);
 
@@ -352,7 +381,6 @@ public class MiniGame extends DataStore {
 
         for (String cmd : getMessageList("conEndCmd")) {
             cmd = cmd
-                    .replace("{player}", playerList.get(0).getName())
                     .replace("{game}", gameName);
             cmd = randomChoose(cmd);
             if (cmd.contains("{allPlayer}")) {
@@ -403,7 +431,21 @@ public class MiniGame extends DataStore {
             WorldBorder worldBorder = getWorldBoarder();
             Location worldBoarderLocation = getWorldBoarderLocation();
 
-            worldBorder.setCenter(worldBoarderLocation);
+
+            if (getSafeWorldBoarderFinderMode()) {
+                main : for (int x = 0; x < 1000; x++) {
+                    for (int z = 0; z < 1000; z++) {
+                        Biome biome = worldBoarderLocation.getWorld().getBiome(x, z);
+                        if (!(biome == Biome.OCEAN || biome == Biome.DEEP_OCEAN || biome == Biome.FROZEN_OCEAN)) {
+                            worldBoarderLocation.setX(x);
+                            worldBoarderLocation.setZ(z);
+                            worldBorder.setCenter(worldBoarderLocation);
+                            break main;
+                        }
+                    }
+                }
+
+            } else worldBorder.setCenter(worldBoarderLocation);
             worldBorder.setDamageAmount(getWorldBoarderOutDamage());
             worldBorder.setSize(getWorldBoarderSizePerPlayer() * playerAmount);
             worldBorder.setSize(getWorldBoarderMinSize(), getWorldBoarderSpeed());
@@ -426,10 +468,11 @@ public class MiniGame extends DataStore {
             cmd = randomChoose(cmd);
             if (cmd.contains("{allPlayer}")) {
                 for (Player p : playerList)
-                    Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd
+                    Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), calc(randomNumber(cmd
                             .replace("{allPlayer}", p.getName())
-                    .replace("{playerMode}", getMode(p)));
-            } else Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd);
+                            .replace("{realPlayerMode}", getRealMode(p))
+                            .replace("{playerMode}", getMode(p)))));
+            } else Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), calc(randomNumber(cmd)));
         }
 
         int i = 0;
@@ -442,7 +485,7 @@ public class MiniGame extends DataStore {
                                 .replace("{player}", p.getName())
                                 .replace("{game}", gameName));
                      */
-                    p.teleport(getLocation("defaultStartLocation", i));
+                    if (getLocationIsExist("defaultStartLocation")) p.teleport(getLocation("defaultStartLocation"));
                     i++;
 
                     p.setHealthScale(getDefaultStartMaxHeart());
@@ -462,12 +505,12 @@ public class MiniGame extends DataStore {
                      */
                     if (i == 0) {
                         teamPlayers.get("red").add(p);
-                        p.teleport(getLocationList("redStartLocation").get(i));
+                        if (getLocationIsExist("redStartLocation")) p.teleport(getLocation("redStartLocation"));
                         i++;
                         p.setHealthScale(getRedStartMaxHeart());
                     } else {
                         teamPlayers.get("blue").add(p);
-                        p.teleport(getLocationList("blueStartLocation").get(i));
+                        if (getLocationIsExist("blueStartLocation")) p.teleport(getLocation("blueStartLocation"));
                         i++;
                         p.setHealthScale(getBlueStartMaxHeart());
                     }
@@ -488,12 +531,12 @@ public class MiniGame extends DataStore {
                          */
                         if (i % 2 == 0) {
                             teamPlayers.get("red").add(p);
-                            p.teleport(getLocationList("redStartLocation").get(i));
+                            if (getLocationIsExist("redStartLocation")) p.teleport(getLocationList("redStartLocation").get(i));
                             i++;
                             p.setHealthScale(getRedStartMaxHeart());
                         } else {
                             teamPlayers.get("blue").add(p);
-                            p.teleport(getLocationList("blueStartLocation").get(j));
+                            if (getLocationIsExist("blueStartLocation")) p.teleport(getLocationList("blueStartLocation").get(j));
                             j++;
                             p.setHealthScale(getBlueStartMaxHeart());
                         }
@@ -506,7 +549,7 @@ public class MiniGame extends DataStore {
                                     .replace("{player}", p.getName())
                                     .replace("{game}", gameName));
                          */
-                        p.teleport(getLocationList("defaultStartLocation").get(i));
+                        if (getLocationIsExist("defaultStartLocation")) p.teleport(getLocationList("defaultStartLocation").get(i));
                         i++;
                         p.setHealthScale(getDefaultStartMaxHeart());
                     }
@@ -551,13 +594,38 @@ public class MiniGame extends DataStore {
 
     }
 
-    public String randomChoose(String string) { //{random(extraDamageMode:resistingDamageMode:dropItemMode)}
+    public String randomChoose(String string) {
 
         String area = StringUtils.substringBetween(string, "{random(", ")}");
         if (area == null) return string;
         List<String> stringList = new ArrayList<>(Arrays.asList(area.split("-")));
         String result = stringList.get(ThreadLocalRandom.current().nextInt(1, stringList.size()));
         return string.replace("{random("+ area + ")}", result);
+    }
+
+    public String randomNumber(String string) {
+
+
+        String area = StringUtils.substringBetween(string, "{randomNumber(", ")}");
+        //System.out.println(area);
+
+        if (area == null) return string;
+
+        List<String> stringList = new ArrayList<>(Arrays.asList(area.split("-")));
+
+        int result;
+
+        if (stringList.size() == 1) {
+            result = ThreadLocalRandom.current().nextInt(0, Integer.parseInt(stringList.get(0) + 1));
+
+        } else if (stringList.size() == 2) {
+            result = ThreadLocalRandom.current().nextInt(Integer.parseInt(stringList.get(0)), Integer.parseInt(stringList.get(1) + 1));
+
+        } else return string;
+
+        return string.replace("{randomNumber("+ area + ")}", String.valueOf(result));
+
+
     }
 
 }
