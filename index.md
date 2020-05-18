@@ -11,7 +11,8 @@ Syntax highlighted code block
 - 디스코드: 브루스#8183
 
 ## 플러그인 다운로드 
->> [다운로드](https://github.com/FreedyPlugins/FreedyMinigameMaker/raw/master/FreedyMinigameMaker.jar) <<
+> [다운로드](https://github.com/FreedyPlugins/FreedyMinigameMaker/raw/master/FreedyMinigameMaker.jar)
+
 
 ## 주석
 ![Image](clouds.jpg)
