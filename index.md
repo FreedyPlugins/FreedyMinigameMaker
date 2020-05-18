@@ -26,7 +26,7 @@
 [링크클릭](https://github.com/FreedyPlugins/FreedyMinigameMaker/raw/master/FreedyMinigameMaker.jar)
 
 ## 플러그인 자습서
-플러그인을 사용하려면 자습서를 살펴보세요. [링크클릭](./wiki.html).
+플러그인을 사용하려면 자습서를 살펴보세요. [링크클릭](https://github.com/FreedyPlugins/FreedyMinigameMaker/wiki)
 
 ## 플러그인 호환성
 이 플러그인은 마인크래프트 버전 1.12.2 에서 가능합니다. 최신버전에서도 가능하게 만들었지만 작동이 안될 수도 있습니다. 
