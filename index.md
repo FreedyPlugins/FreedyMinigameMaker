@@ -16,7 +16,3 @@
 
 ## 플러그인 다운로드 
 > [링크](https://github.com/FreedyPlugins/FreedyMinigameMaker/raw/master/FreedyMinigameMaker.jar)
-
-
-## 주석
-![Image](clouds.jpg)
