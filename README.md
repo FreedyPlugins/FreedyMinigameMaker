@@ -1,5 +1,5 @@
-# FreedyMinigameMaker
-Make MiniGame finally
+# 프리디미니게임메이커
+마인크래프트 미니게임 개발툴
 
 ## 이 플러그인은 ...
 마인크래프트 미니게임을 만드는데에 있어서 도움을 줄 수 있는 플러그인 입니다.
