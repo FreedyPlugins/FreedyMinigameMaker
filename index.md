@@ -11,8 +11,8 @@
 - 디스코드: 브루스#8183
 - 커뮤니티: [링크](https://discord.gg/xej5Ut3)
 
-## 플러그인 자습서
-> [링크](https://github.com/FreedyPlugins/FreedyMinigameMaker/wiki)
-
 ## 플러그인 다운로드 
 > [링크](https://github.com/FreedyPlugins/FreedyMinigameMaker/raw/master/FreedyMinigameMaker.jar)
+
+## 플러그인 자습서
+> [링크](https://github.com/FreedyPlugins/FreedyMinigameMaker/wiki)
