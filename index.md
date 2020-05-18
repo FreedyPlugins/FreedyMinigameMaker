@@ -39,11 +39,15 @@
 
 ## 이용약관
 플러그인의 소스를 수정해서 사용 가능합니다.
+
 이 플러그인을 판매, 재배포 할 수 없습니다.
+
 FreedyPlugins는 이 플러그인이 초래할 수있는 손상에 대해 법적 책임을지지 않습니다.
 
 ## 기타 링크
-### 깃허브: 
+
+### 깃허브:
 [링크클릭](https://github.com/FreedyPlugins/FreedyMinigameMaker)
+
 ### 디스코드 커뮤니티: 
 [링크클릭](https://discord.gg/xej5Ut3)
