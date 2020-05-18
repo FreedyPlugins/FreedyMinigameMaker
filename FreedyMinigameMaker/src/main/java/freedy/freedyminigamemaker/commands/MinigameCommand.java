@@ -369,13 +369,25 @@ public class MinigameCommand implements CommandExecutor {
                                         player.sendMessage("§c참고: <명령줄> 입력란에는 공백을 {spc}으로 넣으세요");
                                     }
                                     break;
+                                case "loc":
+                                    if (args.length == 4) {
+                                        miniGames.getEditor(args[1]).setLocation(args[3] + "Location",
+                                                playerLocation.getWorld().getName(),
+                                                playerLocation.getX(),
+                                                playerLocation.getY(),
+                                                playerLocation.getZ(),
+                                                playerLocation.getYaw(),
+                                                playerLocation.getPitch());
+                                        player.sendMessage("§6위치가 " + args[1] + " 커스텀 위치에 저장 되었습니다");
+                                    } else player.sendMessage("§c사용법: /fmg set <게임이름> loc <customName>");
+                                    break;
 
                                 default:
                                     player.sendMessage("§c사용법: /fmg set <게임이름> <wait|start|end|addBlock|addDropItem|gameType|teamMode|maxHealth|timePerPlayer|worldBoarder|scoreBoard|addCmd|msg> ...");
 
                             }
                         } else
-                            player.sendMessage("§c사용법: /fmg set <게임이름> <wait|start|end|addBlock|addDropItem|gameType|teamMode|maxHealth|startGameMode|quitGameMode|timePerPlayer|worldBoarder|scoreBoard|addCmd|msg> ...");
+                            player.sendMessage("§c사용법: /fmg set <게임이름> <wait|start|end|addBlock|addDropItem|gameType|teamMode|maxHealth|startGameMode|quitGameMode|timePerPlayer|worldBoarder|scoreBoard|addCmd|msg|loc> ...");
                     } else player.sendMessage("§c권한이 없습니다.");
                     break;
                 case "list":

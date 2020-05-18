@@ -10,7 +10,6 @@ import java.util.List;
 public class DataStore extends DataEditor {
 
 
-
     public DataStore(FreedyMinigameMaker plugin, String gameName) {
         super(plugin, gameName);
     }
@@ -104,6 +103,10 @@ public class DataStore extends DataEditor {
         return plugin.getConfig().getInt(gamePath + "repeatTime");
     }
 
+    public List<Integer> getRepeatTimes() {
+        return plugin.getConfig().getIntegerList(gamePath + "repeatTimes");
+    }
+
     public double getExtraDamage() {
         return plugin.getConfig().getDouble(gamePath + "extraDamage");
     }
@@ -122,7 +125,7 @@ public class DataStore extends DataEditor {
 
 
     public boolean getLocationIsExist(String locationPath) {
-        return plugin.getConfig().getBoolean(gamePath + locationPath + "isExist");
+        return plugin.getConfig().isSet(gamePath + locationPath);
     }
 
     public boolean getSafeWorldBoarderFinderMode() {
@@ -166,14 +169,14 @@ public class DataStore extends DataEditor {
     }
 
     public Location getLocation(String locationPath) {
-        String worldName = plugin.getConfig().getString(gamePath + "." + locationPath + ".world");
+        String worldName = plugin.getConfig().getString(gamePath + locationPath + ".world");
         if (worldName == null) return null;
         World world = Bukkit.getWorld(worldName);
-        double x = Double.parseDouble(plugin.getConfig().getString(gamePath + "." + locationPath + ".x"));
-        double y = Double.parseDouble(plugin.getConfig().getString(gamePath + "." + locationPath + ".y"));
-        double z = Double.parseDouble(plugin.getConfig().getString(gamePath + "." + locationPath + ".z"));
-        float yaw = Float.parseFloat(plugin.getConfig().getString(gamePath + "." + locationPath + ".yaw"));
-        float pitch = Float.parseFloat(plugin.getConfig().getString(gamePath + "." + locationPath + ".pitch"));
+        double x = Double.parseDouble(plugin.getConfig().getString(gamePath  + locationPath + ".x"));
+        double y = Double.parseDouble(plugin.getConfig().getString(gamePath + locationPath + ".y"));
+        double z = Double.parseDouble(plugin.getConfig().getString(gamePath + locationPath + ".z"));
+        float yaw = Float.parseFloat(plugin.getConfig().getString(gamePath + locationPath + ".yaw"));
+        float pitch = Float.parseFloat(plugin.getConfig().getString(gamePath + locationPath + ".pitch"));
         return new Location(world, x, y, z, yaw, pitch);
     }
 

@@ -16,7 +16,7 @@ public class DataEditor {
 
     public String gamePath;
 
-    FreedyMinigameMaker plugin;
+    public FreedyMinigameMaker plugin;
 
     public DataEditor(FreedyMinigameMaker plugin, String gameName) {
         this.plugin = plugin;
@@ -58,7 +58,6 @@ public class DataEditor {
         plugin.getConfig().set(gamePath + "beZombieMsg", "§c{player}이(가) {killer}에 의해 좀비가 되었습니다!");
         plugin.getConfig().set(gamePath + "repeatTime", -1);
         plugin.getConfig().set(gamePath + "repeatCmd", new ArrayList<>());
-        plugin.getConfig().set(gamePath + "startCmd", new ArrayList<>());
         plugin.getConfig().set(gamePath + "conStartCmd", new ArrayList<>());
         plugin.getConfig().set(gamePath + "joinCmd", new ArrayList<>());
         plugin.getConfig().set(gamePath + "quitCmd", new ArrayList<>());

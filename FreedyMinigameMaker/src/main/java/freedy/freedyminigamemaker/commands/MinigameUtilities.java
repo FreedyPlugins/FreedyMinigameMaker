@@ -34,6 +34,33 @@ public class MinigameUtilities implements CommandExecutor {
                 Player player = Bukkit.getPlayer(args[0]);
                 MiniGame miniGame = miniGames.getJoined(player);
                 switch (args[1]) {
+                    case "teleport":
+                        if (args.length == 5) {
+                            MiniGame mg = miniGames.get(args[3]);
+                            if (mg.getLocationIsExist(args[4] + "Location")) {
+                                switch (args[2]) {
+                                    case "private":
+                                        player.teleport(mg.getLocation(args[4] + "Location"));
+                                        break;
+                                    case "team":
+                                        for (String teamName : mg.teamPlayers.keySet()) {
+                                            List<Player> teamPlayerList = mg.teamPlayers.get(teamName);
+                                            if (teamPlayerList.contains(player)) {
+                                                for (Player p : teamPlayerList)
+                                                    p.teleport(mg.getLocation(args[4] + "Location"));
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    case "game":
+                                        for (Player p : mg.playerList)
+                                            p.teleport(mg.getLocation(args[4] + "Location"));
+                                        break;
+                                }
+                            }
+                        } else sender.sendMessage("§c사용법: /fut <player> teleport <private|team|game> <미니게임> <저장된위치>");
+                        break;
+
                     case "sendMsg":
                         if (args.length >= 4) {
                             StringBuilder message = new StringBuilder(args[3]);
@@ -111,6 +138,34 @@ public class MinigameUtilities implements CommandExecutor {
                             sender.sendMessage("§c참고: <명령줄> 입력란에는 공백을 {spc}으로 넣으세요");
                         }
                         break;
+                    case "sendSound":
+                        if (args.length == 5) {
+                            switch (args[2]) {
+                                case "private":
+                                    player.playSound(player.getLocation(), Sound.valueOf(args[3]), 1F, 1F);
+                                    break;
+                                case "team":
+                                    for (String teamName : miniGame.teamPlayers.keySet()) {
+                                        List<Player> teamPlayerList = miniGame.teamPlayers.get(teamName);
+                                        if (teamPlayerList.contains(player)) {
+                                            for (Player p : teamPlayerList) {
+                                                p.playSound(p.getLocation(), Sound.valueOf(args[3]), 1F, 1F);
+                                            }
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                case "game":
+                                    for (Player p : miniGame.playerList) {
+                                        p.playSound(p.getLocation(), Sound.valueOf(args[3]), 1F, 1F);
+                                    }
+                                    break;
+                            }
+                        } else {
+                            sender.sendMessage("§c사용법: /fut <player> sendSound <private|team|game> <사운드>");
+                            sender.sendMessage("사운드목록: https://helpch.at/docs/1.12.2/org/bukkit/Sound.html");
+                        }
+                        break;
 
                     case "set":
                         switch (args[2]) {
@@ -153,10 +208,18 @@ public class MinigameUtilities implements CommandExecutor {
                                     .replace("{player}", player.getName())
                                     .replace("{playerMode}", miniGame == null ? "none" : miniGame.getMode(player))
                                     .replace("{gameName}", miniGame == null ? "none" : miniGame.gameName);
+                            if (miniGame != null) {
+                                var1 = miniGame.getData(var1);
+                                var1 = miniGame.getPlayerData(player).getData(var1);
+                            }
                             var2 = var2
                                     .replace("{player}", player.getName())
                                     .replace("{playerMode}", miniGame == null ? "none" : miniGame.getMode(player))
                                     .replace("{gameName}", miniGame == null ? "none" : miniGame.gameName);
+                            if (miniGame != null) {
+                                var2 = miniGame.getData(var2);
+                                var2 = miniGame.getPlayerData(player).getData(var2);
+                            }
                             boolean result = var1.equals(var2);
                             if (args[3].equals("/=")) result = !result;
                             if (result) {
@@ -224,6 +287,23 @@ public class MinigameUtilities implements CommandExecutor {
                             }
                         }
                         player.teleport(location);
+                        break;
+                    case "resetBlocks":
+                        if (args.length == 3) {
+                            miniGames.get(args[2]).resetBlocks();
+                        } else sender.sendMessage("§c사용법: /fut <player> resetBlocks <게임이름>");
+                        break;
+                    case "setData":
+                        if (args.length == 4) {
+                            if (miniGame != null) miniGame.setCustomData(args[2], args[3]);
+                            else sender.sendMessage("§c플레이어가 미니게임에 참여 중이지 않기 때문에 데이타를 저장할 수 없습니다.");
+                        } else sender.sendMessage("§c사용법: /fut <player> getData <customData> <data>");
+                        break;
+                    case "setPlayerData":
+                        if (args.length == 4) {
+                            if (miniGame != null) miniGame.getPlayerData(player).setCustomData(args[2], args[3]);
+                            else sender.sendMessage("§c플레이어가 미니게임에 참여 중이지 않기 때문에 데이타를 저장할 수 없습니다.");
+                        } else sender.sendMessage("§c사용법: /fut <player> getPlayerData <customData> <data>");
                         break;
                 }
             } else sender.sendMessage("§c사용법: /fut <player> <sendMsg|set|openGui|if|executeCmd> ...");

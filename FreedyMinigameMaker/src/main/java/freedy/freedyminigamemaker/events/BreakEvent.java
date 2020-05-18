@@ -31,8 +31,12 @@ public class BreakEvent implements Listener {
         Player player = event.getPlayer();
         if (miniGames.isJoined(player)) {
             MiniGame miniGame = miniGames.getJoined(player);
+            Block block = event.getBlock();
+            if (miniGame.getGameType().equals("build"))
+                miniGame.addBlock(block);
+
             if (miniGame.getPlayerData(player).dropItemMode) {
-                Block block = event.getBlock();
+
                 Material material = block.getType();
                 if (miniGame.getDropList().contains(material.toString())) {
                     if (ThreadLocalRandom.current().nextInt(1, 100 + 1) <= miniGame.getDropRate()) {
