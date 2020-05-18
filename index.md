@@ -9,6 +9,7 @@
 ## 개발자 연락하기
 - 카카오톡: Bruce0203
 - 디스코드: 브루스#8183
+- 커뮤니티: [링크](https://discord.gg/xej5Ut3)
 
 ## 플러그인 자습서
 > [링크](https://github.com/FreedyPlugins/FreedyMinigameMaker/wiki)
