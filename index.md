@@ -20,10 +20,10 @@
 > 그리고 더 많은 기능들 ...
 
 ## 플러그인 다운로드 
-### 개발버전: 
-[링크클릭](https://github.com/FreedyPlugins/FreedyMinigameMaker/raw/master/FreedyMinigameMaker.jar)
 ### 최신버전(추천): 
 [링크클릭](https://github.com/FreedyPlugins/FreedyMinigameMaker/releases/latest/download/FreedyMinigameMaker.jar)
+### 개발버전: 
+[링크클릭](https://github.com/FreedyPlugins/FreedyMinigameMaker/raw/master/FreedyMinigameMaker.jar)
 
 ## 플러그인 자습서
 플러그인을 사용하려면 자습서를 살펴보세요. [링크클릭](https://github.com/FreedyPlugins/FreedyMinigameMaker/wiki)
@@ -38,16 +38,14 @@
 - 디스코드: 브루스#8183
 
 ## 이용약관
-플러그인의 소스를 수정해서 사용 가능합니다.
+- 플러그인의 소스를 수정해서 사용 가능합니다.
 
-이 플러그인을 판매, 재배포 할 수 없습니다.
+- 이 플러그인을 판매, 재배포 할 수 없습니다.
 
-개발자는 이 이 이 플러그인이 초래할 수있는 손상에 대해 법적 책임을지지 않습니다.
+- 개발자는 이 이 이 플러그인이 초래할 수있는 손상에 대해 법적 책임을지지 않습니다.
 
 ## 기타 링크
-
 ### 깃허브:
 [링크클릭](https://github.com/FreedyPlugins/FreedyMinigameMaker)
-
 ### 디스코드 커뮤니티: 
 [링크클릭](https://discord.gg/xej5Ut3)
