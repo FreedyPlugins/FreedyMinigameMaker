@@ -1,4 +1,3 @@
-Syntax highlighted code block
 
 # 프리디 미니게임 메이커
 ## 소개
