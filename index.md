@@ -9,11 +9,11 @@
 
 > 메세지, 타이틀, 사운드 보내기 
 
-> 미니게임 커맨드의 다양한 플레이스홀더 지원 
+> 미니게임 커맨드의 다양한 구문 지원
 
 > 미니게임의 타이머 기능 지원
 
-> 미니게임 데이타, 플레이어 데이타 입출력 기능
+> 미니게임 데이타, 플레이어 데이타 미니게임 변수 지원
 
 > 팀전, 개인전, 좀비서바이벌 지원
 
@@ -26,11 +26,12 @@
 [링크클릭](https://github.com/FreedyPlugins/FreedyMinigameMaker/raw/master/FreedyMinigameMaker.jar)
 
 ## 플러그인 자습서
-플러그인을 사용하려면 자습서를 살펴보세요. [링크클릭](https://github.com/FreedyPlugins/FreedyMinigameMaker/wiki)
+이 플러그인의 자습서는 아래 링크에 있습니다.
+[링크클릭](https://github.com/FreedyPlugins/FreedyMinigameMaker/wiki)
 
 ## 플러그인 호환성
 이 플러그인은 마인크래프트 버전 1.12.2 에서 가능합니다. 최신버전에서도 가능하게 만들었지만 작동이 안될 수도 있습니다. 
-만약 작동이 되지 않는다면 개발자에게 알려주세요. 
+만약 작동이 되지 않는다면 개발자에게 알려주세요. 제가 고칠게요.
 
 ## 개발자 연락하기
 언제든지 이 플러그인에 관한 이야기라면, 연락하는 것에 부담갖지 마세요.
@@ -44,8 +45,8 @@
 
 - 개발자는 이 이 이 플러그인이 초래할 수있는 손상에 대해 법적 책임을지지 않습니다.
 
-## 기타 링크
-### 깃허브:
+### 기타 링크
+#### 깃허브:
 [링크클릭](https://github.com/FreedyPlugins/FreedyMinigameMaker)
-### 디스코드 커뮤니티: 
+#### 디스코드 커뮤니티: 
 [링크클릭](https://discord.gg/xej5Ut3)
