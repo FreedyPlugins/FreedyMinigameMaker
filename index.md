@@ -6,7 +6,7 @@
 
 ## 플러그인 다운로드 
 > 개발버전: [링크클릭](https://github.com/FreedyPlugins/FreedyMinigameMaker/raw/master/FreedyMinigameMaker.jar)
-> 최신버전: [링크클릭](https://github.com/FreedyPlugins/FreedyMinigameMaker/releases/latest/download/FreedyMinigameMaker.jar)
+> 최신버전(안정적): [링크클릭](https://github.com/FreedyPlugins/FreedyMinigameMaker/releases/latest/download/FreedyMinigameMaker.jar)
 
 ## 플러그인 자습서
 > [링크클릭](https://github.com/FreedyPlugins/FreedyMinigameMaker/wiki)
