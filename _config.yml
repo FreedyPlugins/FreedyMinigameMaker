@@ -1,6 +1,6 @@
 theme: jekyll-theme-cayman
 title: 프리디 미니게임 메이커
-description: 미니게임을 드디어 만들어 보세요.
+description: 마침내, 미니게임을 만들어 보세요
 site_favicon: icon.png
 github:
   is_project_page: false
