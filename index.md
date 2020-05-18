@@ -15,5 +15,7 @@
 궁금하거나 제안하고 싶거나 도움이 할 때 연락해주시면 됩니다.
 - 카카오톡: Bruce0203
 - 디스코드: 브루스#8183
-- 커뮤니티: [링크](https://discord.gg/xej5Ut3)
 
+## 기타 링크
+프리디미니게임메이커 깃허브: [링크클릭](https://github.com/FreedyPlugins/FreedyMinigameMaker)
+디스코드 커뮤니티: [링크클릭](https://discord.gg/xej5Ut3)
