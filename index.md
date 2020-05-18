@@ -5,10 +5,10 @@
 또한, 플러그인 기능 제안이나 오류 제보를 받습니다. 브루스에게 연락하세요. 
 
 ## 플러그인 다운로드 
-> [링크](https://github.com/FreedyPlugins/FreedyMinigameMaker/raw/master/FreedyMinigameMaker.jar)
+> [링크클릭](https://github.com/FreedyPlugins/FreedyMinigameMaker/raw/master/FreedyMinigameMaker.jar)
 
 ## 플러그인 자습서
-> [링크](https://github.com/FreedyPlugins/FreedyMinigameMaker/wiki)
+> [링크클릭](https://github.com/FreedyPlugins/FreedyMinigameMaker/wiki)
 
 ## 개발자 연락하기
 - 카카오톡: Bruce0203
