@@ -1,4 +1,6 @@
 
+***
+
 ## 플러그인 다운로드 
 ##### 최신버전(추천): [>> 최신버전 다운로드 <<](https://github.com/FreedyPlugins/FreedyMinigameMaker/releases/latest/download/FreedyMinigameMaker.jar)
 ##### 개발버전: [>> 개발버전 다운로드 <<](https://github.com/FreedyPlugins/FreedyMinigameMaker/raw/master/FreedyMinigameMaker.jar)
