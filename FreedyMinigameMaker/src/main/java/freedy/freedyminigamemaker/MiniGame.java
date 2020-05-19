@@ -2,7 +2,6 @@ package freedy.freedyminigamemaker;
 
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.WorldBorder;
 import org.bukkit.block.Biome;
@@ -43,7 +42,7 @@ public class MiniGame extends DataStore {
     boolean isPlaying;
     boolean isWaiting;
     int waitTime; //타이머
-    int repeaterTimer;
+    Map<String, Integer> repeaterTimeList;
 
 
     public MiniGame(FreedyMinigameMaker plugin, String gameName) {
@@ -56,7 +55,7 @@ public class MiniGame extends DataStore {
         playerDataList = new ArrayList<>();
         playerAmount = 0;
         waitTime = 0;
-        repeaterTimer = 0;
+        repeaterTimeList = new HashMap<>();
         isPlaying = false;
         isWaiting = false;
     }
@@ -139,25 +138,30 @@ public class MiniGame extends DataStore {
             int endTime = (getWaitForEndTime() * getTimePerPlayer());
             if (waitTime >= endTime) {
                 waitTime = 0;
-                repeaterTimer = 0;
+                repeaterTimeList = new HashMap<>();
                 isPlaying = false;
                 stop();
             } else {
                 //for (Player p : playerList) p.sendMessage(getMessage("endTimerMsg").replace("{time}", String.valueOf(endTime - waitTime)));
                 setScoreBoardAll(endTime - waitTime);
 
-                repeaterTimer++;
-                if (getRepeatTime() > 0 ? repeaterTimer == getRepeatTime() : getRepeatTimes().contains(repeaterTimer)) {
-                    for (String cmd : getMessageList("repeatCmd")) {
-                        if (cmd.contains("{allPlayer}")) {
-                            for (Player p : playerList) {
-                                Bukkit.getServer().dispatchCommand(console,
-                                        replaceAll(cmd.replace("{leftTime}", String.valueOf(endTime - waitTime)), p));
-                            }
-                        } else Bukkit.getServer().dispatchCommand(console, replaceAll(cmd, null));
-                    }
-                    repeaterTimer = 0;
+                for (String repeatName : getRepeatList()) {
+                    int repeaterTimer = repeaterTimeList.get(repeatName) == null ? 0 : repeaterTimeList.get(repeatName);
+                    repeaterTimer++;
+                    repeaterTimeList.put(repeatName, repeaterTimer);
+                    if (getRepeatTimes(repeatName) == null ?
+                            repeaterTimer == getRepeatTime(repeatName) : getRepeatTimes(repeatName).contains(repeaterTimer)) {
+                        for (String cmd : getMessageList("repeats." + repeatName + ".cmd")) {
+                            if (cmd.contains("{allPlayer}")) {
+                                for (Player p : playerList) {
+                                    Bukkit.getServer().dispatchCommand(console,
+                                            replaceAll(cmd.replace("{leftTime}", String.valueOf(endTime - waitTime)), p));
+                                }
+                            } else Bukkit.getServer().dispatchCommand(console, replaceAll(cmd, null));
+                        }
+                        repeaterTimeList.put(repeatName, 0);
 
+                    }
                 }
                 waitTime++;
 
@@ -169,7 +173,7 @@ public class MiniGame extends DataStore {
                     isWaiting = false;
                     isPlaying = true;
                     waitTime = 0;
-                    repeaterTimer = 0;
+                    repeaterTimeList = new HashMap<>();
                     start();
                 } else {
                     //for (Player p : playerList) p.sendMessage(getMessage("startTimerMsg").replace("{time}", String.valueOf(getWaitForStartTime() - waitTime)));
@@ -233,8 +237,6 @@ public class MiniGame extends DataStore {
         if (getLocationIsExist("endLocation")) player.teleport(getLocation("endLocation"));
         player.getInventory().clear();
         player.updateInventory();
-        if (getQuitGameMode()) player.setGameMode(GameMode.valueOf(getDefaultEndGameMode()));
-        player.setHealthScale(20.0);
 
     }
 
@@ -261,7 +263,7 @@ public class MiniGame extends DataStore {
         isPlaying = false;
         isWaiting = false;
         waitTime = 0;
-        repeaterTimer = 0;
+        repeaterTimeList = new HashMap<>();
         playerAmount = 0;
         customData = new HashMap<>();
         blockList = new ArrayList<>();
@@ -302,7 +304,7 @@ public class MiniGame extends DataStore {
 
         if (isWaiting && playerList.size() < getMaxStartPlayers()) {
             waitTime = 0;
-            repeaterTimer = 0;
+            repeaterTimeList = new HashMap<>();
             for (Player p : playerList){
                 p.sendMessage(getMessage("morePlayerMsg"));
                 setScoreBoard(p, 0);
@@ -368,8 +370,8 @@ public class MiniGame extends DataStore {
                     if (isPlaying && waitTime == 0) showingEndMsg = getMessage("noWinnerEndMsg").replace("{game}", gameName);
                     else if (playerList.size() == 1) {
                         showingEndMsg = replaceAll(getMessage("endMsg"), null);
-                            for (String cmd : getMessageList("winnerCmd"))
-                                Bukkit.getServer().dispatchCommand(console, replaceAll(cmd, null));
+                        for (String cmd : getMessageList("winnerCmd"))
+                            Bukkit.getServer().dispatchCommand(console, replaceAll(cmd, null));
                     }
                     else showingEndMsg = getMessage("noWinnerEndMsg").replace("{game}", gameName);
 
@@ -384,12 +386,7 @@ public class MiniGame extends DataStore {
 
         removeAll(playerList);
 
-        for (String cmd : getMessageList("conEndCmd")) {
-            if (cmd.contains("{allPlayer}")) {
-                for (Player p : playerList)
-                    Bukkit.getServer().dispatchCommand(console, replaceAll(cmd, p));
-            } else Bukkit.getServer().dispatchCommand(console, replaceAll(cmd, null));
-        }
+        executeCommands(getMessageList("conEndCmd"), null);
         disable();
     }
 
@@ -452,18 +449,15 @@ public class MiniGame extends DataStore {
 
     public void start() {
 
+        Collections.shuffle(playerList);
+
         playerAmount = playerList.size();
         setWorldBoarder();
 
         teamPlayers.put("red", new ArrayList<>());
         teamPlayers.put("blue", new ArrayList<>());
 
-        for (String cmd : getMessageList("conStartCmd")) {
-            if (cmd.contains("{allPlayer}")) {
-                for (String playerCmd : replaceAllPlayer(cmd, playerList))
-                    Bukkit.getServer().dispatchCommand(console, playerCmd);
-            } else Bukkit.getServer().dispatchCommand(console, replaceAll(cmd, null));
-        }
+        executeCommands(getMessageList("conStartCmd"), null);
 
         int i = 0;
         switch (getGameType()) {
@@ -478,13 +472,10 @@ public class MiniGame extends DataStore {
                     if (getLocationIsExist("defaultStartLocation")) p.teleport(getLocation("defaultStartLocation"));
                     i++;
 
-                    p.setHealthScale(getDefaultStartMaxHeart());
-                    if (getStartGameMode()) p.setGameMode(getDefaultStartGameMode());
                 }
                 //setBlockOnStart(playerNameList, gameName);
                 break;
             case "zombieMode":
-                Collections.shuffle(playerList);
                 i = 0;
                 for (Player p : playerList) {
                     p.sendMessage(getMessage("startMsg").replace("{game}", gameName));
@@ -496,19 +487,14 @@ public class MiniGame extends DataStore {
                     if (i == 0) {
                         teamPlayers.get("red").add(p);
                         if (getLocationIsExist("redStartLocation")) p.teleport(getLocation("redStartLocation"));
-                        i++;
-                        p.setHealthScale(getRedStartMaxHeart());
                     } else {
                         teamPlayers.get("blue").add(p);
                         if (getLocationIsExist("blueStartLocation")) p.teleport(getLocation("blueStartLocation"));
-                        i++;
-                        p.setHealthScale(getBlueStartMaxHeart());
                     }
-                    if (getStartGameMode()) p.setGameMode(getDefaultStartGameMode());
+                    i++;
                 }
                 break;
             default:
-                Collections.shuffle(playerList);
                 i = 0;
                 int j = 0;
                 if (getTeamMode()) {
@@ -524,12 +510,10 @@ public class MiniGame extends DataStore {
                             teamPlayers.get("red").add(p);
                             if (getLocationIsExist("redStartLocation")) p.teleport(getLocationList("redStartLocation").get(i));
                             i++;
-                            p.setHealthScale(getRedStartMaxHeart());
                         } else {
                             teamPlayers.get("blue").add(p);
                             if (getLocationIsExist("blueStartLocation")) p.teleport(getLocationList("blueStartLocation").get(j));
                             j++;
-                            p.setHealthScale(getBlueStartMaxHeart());
                         }
                     }
                 } else {
@@ -542,7 +526,6 @@ public class MiniGame extends DataStore {
                          */
                         if (getLocationIsExist("defaultStartLocation")) p.teleport(getLocationList("defaultStartLocation").get(i));
                         i++;
-                        p.setHealthScale(getDefaultStartMaxHeart());
                     }
                 }
                 break;
@@ -559,7 +542,7 @@ public class MiniGame extends DataStore {
         return getInventoryTitleList().contains(title);
     }
 
-    public String calc(String string) {
+    public String replaceCalc(String string) {
 
 
         String area = StringUtils.substringBetween(string, "{calc(", ")}");
@@ -585,7 +568,35 @@ public class MiniGame extends DataStore {
 
     }
 
-    public String randomChoose(String string) {
+    public String replaceShuffle(String string) {
+
+        String area = StringUtils.substringBetween(string, "{shuffle(", ")}");
+        if (area == null) return string;
+        List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        Collections.shuffle(stringList);
+        String result = stringList.toString().substring(1, stringList.toString().length() - 1);
+        return string.replace("{shuffle("+ area + ")}", result);
+    }
+
+    public String replacePlayerList(String string) {
+
+        String area = StringUtils.substringBetween(string, "{playerList(", ")}");
+        if (area == null) return string;
+        String result;
+        switch (area) {
+            case "blue":
+                result = teamPlayers.get("blue").toString().substring(1, teamPlayers.get("blue").toString().length() - 1);
+                break;
+            case "red":
+                result = teamPlayers.get("red").toString().substring(1, teamPlayers.get("blue").toString().length() - 1);
+                break;
+            default:
+                result = playerList.toString().substring(1, playerList.toString().length() - 1);
+        }
+        return string.replace("{playerList("+ area + ")}", result);
+    }
+
+    public String replaceRandom(String string) {
 
         String area = StringUtils.substringBetween(string, "{random(", ")}");
         if (area == null) return string;
@@ -594,7 +605,18 @@ public class MiniGame extends DataStore {
         return string.replace("{random("+ area + ")}", result);
     }
 
-    public String highestNumber(String string) {
+    public String replaceIndexOf(String string) {
+
+        String area = StringUtils.substringBetween(string, "{indexOf(", ")}");
+        if (area == null) return string;
+        List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        int index = Integer.parseInt(stringList.get(0));
+        stringList.remove(0);
+        String result = stringList.get(index);
+        return string.replace("{indexOf("+ area + ")}", result);
+    }
+
+    public String replaceHighestNumber(String string) {
 
         String area = StringUtils.substringBetween(string, "{highestNumber(", ")}");
         if (area == null) return string;
@@ -607,7 +629,7 @@ public class MiniGame extends DataStore {
         return string.replace("{highestNumber("+ area + ")}", String.valueOf(result));
     }
 
-    public String lowestNumber(String string) {
+    public String replaceLowestNumber(String string) {
 
         String area = StringUtils.substringBetween(string, "{lowestNumber(", ")}");
         if (area == null) return string;
@@ -620,7 +642,7 @@ public class MiniGame extends DataStore {
         return string.replace("{lowestNumber("+ area + ")}", String.valueOf(result));
     }
 
-    public String randomNumber(String string) {
+    public String replaceRandomNumber(String string) {
 
 
         String area = StringUtils.substringBetween(string, "{randomNumber(", ")}");
@@ -645,7 +667,7 @@ public class MiniGame extends DataStore {
 
     }
 
-    public String getData(String string) {
+    public String replaceData(String string) {
 
 
         String area = StringUtils.substringBetween(string, "{data(", ")}");
@@ -654,9 +676,24 @@ public class MiniGame extends DataStore {
 
         String result = getCustomData(area);
 
-        if (result == null) return string;
+        if (result == null) result = "none";
 
-        return string.replace("{data("+ area + ")}", result);
+        return string.replace("{data(" + area + ")}", result);
+
+
+    }
+
+    public String replaceConstant(String string) {
+
+
+        String area = StringUtils.substringBetween(string, "{constant(", ")}");
+
+        if (area == null) return string;
+
+        String result = getMessage(area);
+        if (result == null) result = "none";
+
+        return string.replace("{constant("+ area + ")}", result);
 
 
     }
@@ -664,41 +701,106 @@ public class MiniGame extends DataStore {
     public String replaceGameData(String string) {
         return string
                 .replace("{maxPlayers}", String.valueOf(getMaxStartPlayers()))
+                .replace("{randomPlayer}", playerList.size() == 1 ?
+                        playerList.get(0).getName() :
+                        playerList.isEmpty() ?
+                                "none" :
+                                playerList.get(ThreadLocalRandom.current().nextInt(0, playerList.size() - 1)).getName())
                 .replace("{playerAmount}", String.valueOf(playerList.size()))
                 .replace("{playerSize}", String.valueOf(playerList.size()))
                 .replace("{isPlaying}", String.valueOf(isPlaying))
                 .replace("{isWaiting}", String.valueOf(isWaiting))
                 .replace("{game}", gameName)
+                .replace("{gameType}", getGameType())
                 .replace("{gameName}", gameName);
     }
 
-    public String replaceCalc(String string, Player player) {
-        string = randomNumber(string);
-        string = randomChoose(string);
-        string = getData(string);
-        if (player != null)
-            string = getPlayerData(player).getData(string);
-        string = highestNumber(string);
-        string = lowestNumber(string);
-        string = calc(string);
+    public String replaceCalcAll(String string, Player player) {
+        String[] strings = StringUtils.substringsBetween(string, "{", "(");
+        if (strings == null) return string;
+        List<String> areas = Arrays.asList(strings);
+        Collections.reverse(areas);
+        for (String area : areas) {
+            switch (area) {
+                case "playerList":
+                    string = replacePlayerList(string);
+                    break;
+                case "indexOf":
+                    string = replaceIndexOf(string);
+                    break;
+                case "shuffle":
+                    string = replaceShuffle(string);
+                    break;
+                case "randomNumber":
+                    string = replaceRandomNumber(string);
+                    break;
+                case "random":
+                    string = replaceRandom(string);
+                    break;
+                case "constant":
+                    string = replaceConstant(string);
+                    break;
+                case "data":
+                    string = replaceData(string);
+                    break;
+                case "playerData":
+                    if (player != null)
+                        string = getPlayerData(player).replaceData(string);
+                    break;
+                case "highestNumber":
+                    string = replaceHighestNumber(string);
+                    break;
+                case "lowestNumber":
+                    string = replaceLowestNumber(string);
+                    break;
+                case "calc":
+                    string = replaceCalc(string);
+                    break;
+                default:
+
+
+            }
+
+
+
+
+        }
         return string;
     }
 
     public String replacePlayerData(String string, Player player) {
         if (player != null) {
             string = string
+                    .replace("{allPlayer}", player.getName())
                     .replace("{playerName}", player.getName())
+                    .replace("{playerIndex}", String.valueOf(playerList.indexOf(player)))
                     .replace("{player}", player.getName());
             if (string.contains("{playerMode}")) string = string.replace("{playerMode}", getMode(player));
             if (string.contains("{realPlayerMode}")) string = string.replace("{realPlayerMode}", getRealMode(player));
         } else {
-            string = string
-                    .replace("{playerName}", playerList.get(0).getName())
-                    .replace("{player}", playerList.get(0).getName());
-            if (string.contains("{playerMode}")) string = string.replace("{playerMode}", getMode(playerList.get(0)));
-            if (string.contains("{realPlayerMode}")) string = string.replace("{realPlayerMode}", getRealMode(playerList.get(0)));
+            if (playerList.isEmpty()) {
+                string = string
+                        .replace("{allPlayer}", "none")
+                        .replace("{playerName}", "none")
+                        .replace("{playerIndex}", "none")
+                        .replace("{player}", "none");
+                if (string.contains("{playerMode}"))
+                    string = string.replace("{playerMode}", "none");
+                if (string.contains("{realPlayerMode}"))
+                    string = string.replace("{realPlayerMode}", "none");
+            } else {
+                string = string
+                        .replace("{allPlayer}", playerList.get(0).getName())
+                        .replace("{playerName}", playerList.get(0).getName())
+                        .replace("{playerIndex}", "0")
+                        .replace("{player}", playerList.get(0).getName());
+                if (string.contains("{playerMode}"))
+                    string = string.replace("{playerMode}", getMode(playerList.get(0)));
+                if (string.contains("{realPlayerMode}"))
+                    string = string.replace("{realPlayerMode}", getRealMode(playerList.get(0)));
+            }
         }
-        string = replaceCalc(string, player);
+        string = replaceCalcAll(string, player);
 
         return string;
     }
@@ -713,7 +815,23 @@ public class MiniGame extends DataStore {
     }
 
     public String replaceAll(String string, Player player) {
-        return replaceCalc(replacePlayerData(replaceGameData(string), player), player);
+        return replacePlayerData(replaceGameData(string), player);
+    }
+
+    public void executeCommands(List<String> commands, Player player) {
+        for (String cmd : commands) {
+            if (cmd.contains("{allPlayer}")) {
+                for (String playerCmd : replaceAllPlayer(cmd, playerList))
+                    Bukkit.getServer().dispatchCommand(console, playerCmd);
+            } else Bukkit.getServer().dispatchCommand(console, replaceAll(cmd, player));
+        }
+    }
+
+    public void executeCommands(String command, Player player) {
+            if (command.contains("{allPlayer}")) {
+                for (String playerCmd : replaceAllPlayer(command, playerList))
+                    Bukkit.getServer().dispatchCommand(console, playerCmd);
+            } else Bukkit.getServer().dispatchCommand(console, replaceAll(command, player));
     }
 
 }

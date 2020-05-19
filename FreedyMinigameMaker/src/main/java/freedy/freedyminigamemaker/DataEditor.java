@@ -78,7 +78,7 @@ public class DataEditor {
         plugin.getConfig().set(gamePath + locationPath + "." + locNum + ".z", z);
         plugin.getConfig().set(gamePath + locationPath + "." + locNum + ".yaw", yaw);
         plugin.getConfig().set(gamePath + locationPath + "." + locNum + ".pitch", pitch);
-        plugin.getConfig().set(gamePath + locationPath + "isExist", true);
+        //plugin.getConfig().set(gamePath + locationPath + "isExist", true);
         plugin.saveConfig();
     }
 
@@ -90,7 +90,7 @@ public class DataEditor {
         plugin.getConfig().set(gamePath + locationPath + ".yaw", yaw);
         plugin.getConfig().set(gamePath + locationPath + ".pitch", pitch);
 
-        plugin.getConfig().set(gamePath + locationPath + "isExist", true);
+        //plugin.getConfig().set(gamePath + locationPath + "isExist", true);
         plugin.saveConfig();
     }
 

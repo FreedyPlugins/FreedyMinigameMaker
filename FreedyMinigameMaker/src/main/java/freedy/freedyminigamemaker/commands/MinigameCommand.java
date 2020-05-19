@@ -38,7 +38,6 @@ public class MinigameCommand implements CommandExecutor {
                     if (args.length == 2) miniGames.getNoneGame().openInv(player, args[1]);
                     else if (args.length == 3) miniGames.getNoneGame().openInv(Bukkit.getPlayer(args[2]), args[1]);
                     else player.sendMessage("§c사용법: /fmg gui <메뉴이름> [플레이어]");
-
                     break;
                 case "join":
                     if (args.length == 2) miniGames.get(args[1]).add(player);
@@ -46,17 +45,21 @@ public class MinigameCommand implements CommandExecutor {
                     else player.sendMessage("§c사용법: /fmg join <게임이름> [플레이어]");
                     break;
                 case "joinAll":
-                    if (args.length == 2) {
-                        for (Player p : Bukkit.getOnlinePlayers()) {
-                            miniGames.get(args[1]).add(p);
-                            miniGames.get(args[1]).getPlayerData(p).dropItemMode = true;
-                        }
-                    } else player.sendMessage("§c사용법: /fmg joinAll <게임이름>");
+                    if (player.hasPermission("freedyminigamemaker.admin")) {
+                        if (args.length == 2) {
+                            for (Player p : Bukkit.getOnlinePlayers()) {
+                                miniGames.get(args[1]).add(p);
+                                miniGames.get(args[1]).getPlayerData(p).dropItemMode = true;
+                            }
+                        } else player.sendMessage("§c사용법: /fmg joinAll <게임이름>");
+                    }
                     break;
                 case "quitAll":
-                    if (args.length == 2) {
-                        miniGames.get(args[1]).removeAll(miniGames.get(args[1]).playerList);
-                    } else player.sendMessage("§c사용법: /fmg quitAll <게임이름>");
+                    if (player.hasPermission("freedyminigamemaker.admin")) {
+                        if (args.length == 2) {
+                            miniGames.get(args[1]).removeAll(miniGames.get(args[1]).playerList);
+                        } else player.sendMessage("§c사용법: /fmg quitAll <게임이름>");
+                    }
                     break;
                 case "quit":
                     if (miniGames.isJoined(player)) {
@@ -363,7 +366,7 @@ public class MinigameCommand implements CommandExecutor {
                                     if (args.length == 5) {
                                         plugin.getConfig().set("miniGames." + args[1] + "." + args[3] + "Msg", ChatColor.translateAlternateColorCodes('&', args[4].replace("{spc}", " ")));
                                         plugin.saveConfig();
-                                        player.sendMessage("§6메새지가 " + args[1] + " 게임에 " + args[3] + "에 저장되었습니다");
+                                        player.sendMessage("§6메세지가 " + args[1] + " 게임에 " + args[3] + "에 저장되었습니다");
                                     } else {
                                         player.sendMessage("§c사용법: /fmg set <게임이름> msg <join|quit|start|end|noWinnerEndMsg|redWinEnd|blueWinEnd|beZombie|extraDamage|dropItem|resistingDamage|startTimer|endTimer> <메세지>");
                                         player.sendMessage("§c참고: <명령줄> 입력란에는 공백을 {spc}으로 넣으세요");
@@ -383,7 +386,7 @@ public class MinigameCommand implements CommandExecutor {
                                     break;
 
                                 default:
-                                    player.sendMessage("§c사용법: /fmg set <게임이름> <wait|start|end|addBlock|addDropItem|gameType|teamMode|maxHealth|timePerPlayer|worldBoarder|scoreBoard|addCmd|msg> ...");
+                                    player.sendMessage("§c사용법: /fmg set <게임이름> <wait|start|end|addDropItem|gameType|teamMode|maxHealth|worldBoarder|timePerPlayer|worldBoarder|scoreBoard|inv|needClearInv|startGameMode|endGameMode|addCmd|msg|loc> ...");
 
                             }
                         } else
@@ -400,10 +403,10 @@ public class MinigameCommand implements CommandExecutor {
                     } else player.sendMessage("§c권한이 없습니다.");
                     break;
                 default:
-                    player.sendMessage("§c사용법: /fmg <join|quit|create|remove|set|list|reload> ...");
+                    player.sendMessage("§c사용법: /fmg <gui|join|quit|create|remove|set|list|reload> ...");
                     break;
             }
-        } else player.sendMessage("§c사용법: /fmg <join|quit|create|remove|set|list|reload> ...");
+        } else player.sendMessage("§c사용법: /fmg <gui|join|quit|create|remove|set|list|reload> ...");
         return true;
     }
 }

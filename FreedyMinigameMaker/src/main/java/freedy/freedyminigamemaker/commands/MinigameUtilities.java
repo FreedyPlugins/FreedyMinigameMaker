@@ -139,7 +139,7 @@ public class MinigameUtilities implements CommandExecutor {
                         }
                         break;
                     case "sendSound":
-                        if (args.length == 5) {
+                        if (args.length == 4) {
                             switch (args[2]) {
                                 case "private":
                                     player.playSound(player.getLocation(), Sound.valueOf(args[3]), 1F, 1F);
@@ -209,19 +209,43 @@ public class MinigameUtilities implements CommandExecutor {
                                     .replace("{playerMode}", miniGame == null ? "none" : miniGame.getMode(player))
                                     .replace("{gameName}", miniGame == null ? "none" : miniGame.gameName);
                             if (miniGame != null) {
-                                var1 = miniGame.getData(var1);
-                                var1 = miniGame.getPlayerData(player).getData(var1);
+                                var1 = miniGame.replaceData(var1);
+                                var1 = miniGame.getPlayerData(player).replaceData(var1);
                             }
                             var2 = var2
                                     .replace("{player}", player.getName())
                                     .replace("{playerMode}", miniGame == null ? "none" : miniGame.getMode(player))
                                     .replace("{gameName}", miniGame == null ? "none" : miniGame.gameName);
                             if (miniGame != null) {
-                                var2 = miniGame.getData(var2);
-                                var2 = miniGame.getPlayerData(player).getData(var2);
+                                var2 = miniGame.replaceData(var2);
+                                var2 = miniGame.getPlayerData(player).replaceData(var2);
                             }
-                            boolean result = var1.equals(var2);
-                            if (args[3].equals("/=")) result = !result;
+                            boolean result;
+                            switch (args[3]) {
+                                case "==":
+                                    result = var1.equals(var2);
+                                    break;
+                                case "/=":
+                                    result = !var1.equals(var2);
+                                    break;
+                                case "<":
+                                    result = Integer.parseInt(var1) < Integer.parseInt(var2);
+                                    break;
+                                case "<=":
+                                    result = Integer.parseInt(var1) <= Integer.parseInt(var2);
+                                    break;
+                                case ">":
+                                    result = Integer.parseInt(var1) > Integer.parseInt(var2);
+                                    break;
+                                case ">=":
+                                    result = Integer.parseInt(var1) >= Integer.parseInt(var2);
+                                    break;
+                                default:
+                                    result = false;
+                                    sender.sendMessage("§c사용법: /fut <player> if <value1> <==|/=|>|>=|<|<=> <value2> <명령줄>");
+                            }
+
+                            if (args[3].equals("/="))
                             if (result) {
                                 StringBuilder stringBuilder = new StringBuilder(args[5]);
                                 for (int i = 6; i < args.length; i++) stringBuilder.append(" ").append(args[i]);
@@ -289,24 +313,47 @@ public class MinigameUtilities implements CommandExecutor {
                         player.teleport(location);
                         break;
                     case "resetBlocks":
-                        if (args.length == 3) {
+                        if (args.length >= 3) {
                             miniGames.get(args[2]).resetBlocks();
                         } else sender.sendMessage("§c사용법: /fut <player> resetBlocks <게임이름>");
                         break;
                     case "setData":
-                        if (args.length == 4) {
-                            if (miniGame != null) miniGame.setCustomData(args[2], args[3]);
+                        if (args.length >= 4) {
+                            StringBuilder stringBuilder = new StringBuilder(args[3]);
+                            for (int i = 4; i < args.length; i++) stringBuilder.append(" ").append(args[i]);
+                            String message = stringBuilder.toString();
+
+                            if (miniGame != null) miniGame.setCustomData(args[2], message);
                             else sender.sendMessage("§c플레이어가 미니게임에 참여 중이지 않기 때문에 데이타를 저장할 수 없습니다.");
-                        } else sender.sendMessage("§c사용법: /fut <player> getData <customData> <data>");
+                        } else sender.sendMessage("§c사용법: /fut <player> setData <customData> <data>");
+                        break;
+                    case "addData":
+                        if (args.length >= 4) {
+                            if (miniGame != null) miniGame.setCustomData(args[2],
+                                    String.valueOf(Integer.parseInt(miniGame.getCustomData(args[2])) + Integer.parseInt(args[3])));
+                            else sender.sendMessage("§c플레이어가 미니게임에 참여 중이지 않기 때문에 데이타를 저장할 수 없습니다.");
+                        } else sender.sendMessage("§c사용법: /fut <player> addData <customData> <amount>");
                         break;
                     case "setPlayerData":
-                        if (args.length == 4) {
-                            if (miniGame != null) miniGame.getPlayerData(player).setCustomData(args[2], args[3]);
+                        if (args.length >= 4) {
+                            StringBuilder stringBuilder = new StringBuilder(args[3]);
+                            for (int i = 4; i < args.length; i++) stringBuilder.append(" ").append(args[i]);
+                            String message = stringBuilder.toString();
+
+                            if (miniGame != null) miniGame.getPlayerData(player).setCustomData(args[2], message);
                             else sender.sendMessage("§c플레이어가 미니게임에 참여 중이지 않기 때문에 데이타를 저장할 수 없습니다.");
                         } else sender.sendMessage("§c사용법: /fut <player> getPlayerData <customData> <data>");
                         break;
+                    case "addPlayerData":
+                        if (args.length >= 4) {
+                            if (miniGame != null) miniGame.getPlayerData(player).setCustomData(args[2],
+                                    String.valueOf(Integer.parseInt(miniGame.getPlayerData(player).getCustomData(args[2])) + Integer.parseInt(args[3])));
+                            else sender.sendMessage("§c플레이어가 미니게임에 참여 중이지 않기 때문에 데이타를 저장할 수 없습니다.");
+                        } else sender.sendMessage("§c사용법: /fut <player> addPlayerData <customData> <amount>");
+                        break;
                 }
-            } else sender.sendMessage("§c사용법: /fut <player> <sendMsg|set|openGui|if|executeCmd> ...");
+            } else sender.sendMessage("§c사용법: /fut <player> " +
+                    "<teleport|sendMsg|sendTitle|sendSound|set|openGui|closeGui|join|if|executeCmd|executeDelayCmd|topTpInWorldBoarder|resetBlocks|setData|addData|setPlayerData|addPlayerData> ...");
         } else sender.sendMessage("§c권한이 없습니다");
         return true;
     }

@@ -37,7 +37,7 @@ public class PlayerData {
         else return "none";
     }
 
-    public String getData(String string) {
+    public String replaceData(String string) {
 
 
         String area = StringUtils.substringBetween(string, "{playerData(", ")}");

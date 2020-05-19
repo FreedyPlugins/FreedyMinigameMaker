@@ -99,12 +99,16 @@ public class DataStore extends DataEditor {
         return plugin.getConfig().getBoolean(gamePath + "needClearInv");
     }
 
-    public int getRepeatTime() {
-        return plugin.getConfig().getInt(gamePath + "repeatTime");
+    public List<String> getRepeatList() {
+        return plugin.getConfig().getStringList(gamePath + "repeatList");
     }
 
-    public List<Integer> getRepeatTimes() {
-        return plugin.getConfig().getIntegerList(gamePath + "repeatTimes");
+    public int getRepeatTime(String repeatName) {
+        return plugin.getConfig().getInt(gamePath + "repeats." + repeatName + ".time");
+    }
+
+    public List<Integer> getRepeatTimes(String repeatName) {
+        return plugin.getConfig().getIntegerList(gamePath + "repeats." + repeatName + ".times");
     }
 
     public double getExtraDamage() {
