@@ -1,3 +1,7 @@
+// 
+// Decompiled by Procyon v0.5.36
+// 
+
 package freedy.freedyminigamemaker;
 
 import org.bukkit.entity.Player;
@@ -5,63 +9,86 @@ import org.bukkit.entity.Player;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MiniGames {
+public class MiniGames
+{
+    public FreedyMinigameMaker plugin;
+    public Map<String, MiniGame> miniGames;
+    public MiniGame noneGame;
+    public static FileStore fileStore;
+    public static FileStore settings;
 
-    FreedyMinigameMaker plugin;
-    Map<String, MiniGame> miniGames;
-    MiniGame noneGame; // existing for compare if game exist or like something
-
-    public MiniGames(FreedyMinigameMaker plugin) {
+    public MiniGames(final FreedyMinigameMaker plugin) {
+        fileStore = new FileStore(plugin, "data.yml");
+        settings = new FileStore(plugin, "settings.yml");
         this.plugin = plugin;
-        miniGames = new HashMap<>();
-        for (String gameName : plugin.getConfig().getStringList("gameList"))
-            add(gameName);
-        noneGame = new MiniGame(plugin, "none");
+        reset();
+
     }
 
-    public void add(String gameName) {
-        miniGames.put(gameName, new MiniGame(plugin, gameName));
+    public void reset(String gameName) {
+        this.miniGames.remove(gameName);
+        add(gameName);
     }
 
-    public void remove(String gameName) {
-        miniGames.remove(gameName);
+    public void reset() {
+        this.miniGames = new HashMap<>();
+        for (final String gameName : plugin.getConfig().getStringList("gameList")) {
+            this.add(gameName);
+        }
+        this.noneGame = new MiniGame(plugin, "none");
     }
-
-
-    public boolean isJoined(Player player) {
-        for (MiniGame minigame : miniGames.values())
-            if (minigame.playerList.contains(player))
+    
+    public void add(final String gameName) {
+        this.miniGames.put(gameName, new MiniGame(this.plugin, gameName));
+    }
+    
+    public void remove(final String gameName) {
+        this.miniGames.remove(gameName);
+    }
+    
+    public boolean isJoined(final Player player) {
+        for (final MiniGame minigame : this.miniGames.values()) {
+            if (minigame.playerList.contains(player)) {
                 return true;
-
+            }
+        }
         return false;
     }
-
-    public boolean isJoined(String gameName, Player player) {
-        return miniGames.get(gameName).playerList.contains(player);
+    
+    public MiniGame getJoined(final Player player) {
+        for (final MiniGame minigame : this.miniGames.values()) {
+            if (minigame.playerList.contains(player)) {
+                return minigame;
+            }
+        }
+        return getNoneGame();
     }
-
-    public MiniGame getJoined(Player player) {
-        for (MiniGame minigame : miniGames.values())
-            if (minigame.playerList.contains(player)) return minigame;
-
-        return null;
-    }
-
-    public MiniGame get(String gameName) {
-        MiniGame miniGame = miniGames.get(gameName);
-        if (miniGame == null) miniGame = new MiniGame(plugin, gameName);
+    
+    public MiniGame get(final String gameName) {
+        MiniGame miniGame = this.miniGames.get(gameName);
+        if (miniGame == null) {
+            miniGame = new MiniGame(this.plugin, gameName);
+        }
         return miniGame;
     }
-
-    public DataEditor getEditor(String gameName) {
-        MiniGame miniGame = miniGames.get(gameName);
-        if (miniGame == null) miniGame = new MiniGame(plugin, gameName);
+    
+    public DataEditor getEditor(final String gameName) {
+        MiniGame miniGame = this.miniGames.get(gameName);
+        if (miniGame == null) {
+            miniGame = new MiniGame(this.plugin, gameName);
+        }
         return miniGame;
     }
-
+    
     public MiniGame getNoneGame() {
-        return noneGame;
+        return this.noneGame;
+    }
+    
+    public FileStore getFileStore() {
+        return MiniGames.fileStore;
     }
 
-
+    public FileStore getSettings() {
+        return MiniGames.settings;
+    }
 }

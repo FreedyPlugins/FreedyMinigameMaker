@@ -1,3 +1,7 @@
+// 
+// Decompiled by Procyon v0.5.36
+// 
+
 package freedy.freedyminigamemaker;
 
 import org.bukkit.*;
@@ -7,248 +11,171 @@ import org.bukkit.inventory.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DataStore extends DataEditor {
-
-
-    public DataStore(FreedyMinigameMaker plugin, String gameName) {
+public class DataStore extends DataEditor
+{
+    public DataStore(final FreedyMinigameMaker plugin, final String gameName) {
         super(plugin, gameName);
     }
-
-
+    
     public int getMaxPlayers() {
-        return plugin.getConfig().getInt(gamePath + "maxPlayers");
+        return this.plugin.getConfig().getInt(this.gamePath + "maxPlayers");
     }
-
+    
     public int getMaxStartPlayers() {
-        return plugin.getConfig().getInt(gamePath + "maxStartPlayers");
+        return this.plugin.getConfig().getInt(this.gamePath + "maxStartPlayers");
     }
-
+    
     public int getWaitForStartTime() {
-        return plugin.getConfig().getInt(gamePath + "waitForStartTime");
-    }
-
-    public int getWaitForEndTime() {
-        return plugin.getConfig().getInt(gamePath + "waitForEndTime");
-    }
-
-    public int getTimePerPlayer() {
-        return plugin.getConfig().getInt(gamePath + "timePerPlayer");
+        return this.plugin.getConfig().getInt(this.gamePath + "waitForStartTime");
     }
 
     public String getGameType() {
-        return plugin.getConfig().getString(gamePath + "gameType");
+        return this.plugin.getConfig().getString(this.gamePath + "gameType");
     }
-
-    public GameMode getDefaultStartGameMode() {
-        return GameMode.valueOf(plugin.getConfig().getString(gamePath + "defaultStartGameMode"));
-    }
-
-    public String getDefaultEndGameMode() {
-        return plugin.getConfig().getString(gamePath + "defaultEndGameMode");
-    }
-
-    public double getDefaultStartMaxHeart() {
-        return plugin.getConfig().getDouble(gamePath + "defaultStartMaxHeart");
-    }
-
-    public double getRedStartMaxHeart() {
-        return plugin.getConfig().getDouble(gamePath + "redTeamStartMaxHeart");
-    }
-
-    public double getBlueStartMaxHeart() {
-        return plugin.getConfig().getDouble(gamePath + "blueTeamStartMaxHeart");
-    }
-
+    
     public List<String> getGameList() {
-        return plugin.getConfig().getStringList("gameList");
+        return this.plugin.getConfig().getStringList("gameList");
     }
-
-    public String getMessage(String messagePath) {
-        return plugin.getConfig().getString(gamePath + messagePath);
+    
+    public String getMessage(final String messagePath) {
+        return this.plugin.getConfig().getString(this.gamePath + messagePath);
     }
-
-    public List<String> getMessageList(String messagePath) {
-        return plugin.getConfig().getStringList(gamePath + messagePath);
-    }
-
-    public boolean getTeamMode() {
-        return plugin.getConfig().getBoolean(gamePath + "teamMode");
-    }
-
-    public boolean getStartGameMode() {
-        return plugin.getConfig().getBoolean(gamePath + "startGameMode");
-    }
-
-    public boolean getQuitGameMode() {
-        return plugin.getConfig().getBoolean(gamePath + "quitGameMode");
-    }
-
-    public List<String> getDropList() {
-        return plugin.getConfig().getStringList(gamePath + "dropItems.dropList");
-    }
-
-    public int getDrops(String material) {
-        return plugin.getConfig().getInt(gamePath + "dropItems.drop." + material);
-    }
-
-    public int getDropRate() {
-        return plugin.getConfig().getInt(gamePath + "dropRate");
+    
+    public List<String> getMessageList(final String messagePath) {
+        return this.plugin.getConfig().getStringList(this.gamePath + messagePath);
     }
 
     public boolean getNeedClearInv() {
-        return plugin.getConfig().getBoolean(gamePath + "needClearInv");
+        return this.plugin.getConfig().getBoolean(this.gamePath + "needClearInv");
     }
-
+    
     public List<String> getRepeatList() {
-        return plugin.getConfig().getStringList(gamePath + "repeatList");
+        return this.plugin.getConfig().getStringList(this.gamePath + "repeatList");
     }
-
-    public int getRepeatTime(String repeatName) {
-        return plugin.getConfig().getInt(gamePath + "repeats." + repeatName + ".time");
+    
+    public int getRepeatTime(final String repeatName) {
+        return this.plugin.getConfig().getInt(this.gamePath + "repeats." + repeatName + ".time");
     }
-
-    public List<Integer> getRepeatTimes(String repeatName) {
-        return plugin.getConfig().getIntegerList(gamePath + "repeats." + repeatName + ".times");
+    
+    public List<Integer> getRepeatTimes(final String repeatName) {
+        return this.plugin.getConfig().getIntegerList(this.gamePath + "repeats." + repeatName + ".times");
     }
-
-    public double getExtraDamage() {
-        return plugin.getConfig().getDouble(gamePath + "extraDamage");
+    
+    public boolean getLocationIsExist(final String locationPath) {
+        return this.plugin.getConfig().isSet(this.gamePath + locationPath);
     }
-
-    public int getDamageRate() {
-        return plugin.getConfig().getInt(gamePath + "damageRate");
-    }
-
-    public double getResistingDamage() {
-        return plugin.getConfig().getDouble(gamePath + "resistingDamage");
-    }
-
-    public int getResistingRate() {
-        return plugin.getConfig().getInt(gamePath + "resistingRate");
-    }
-
-
-    public boolean getLocationIsExist(String locationPath) {
-        return plugin.getConfig().isSet(gamePath + locationPath);
-    }
-
+    
     public boolean getSafeWorldBoarderFinderMode() {
-        return plugin.getConfig().getBoolean(gamePath + "safeWorldBoarderFinderMode");
+        return this.plugin.getConfig().getBoolean(this.gamePath + "safeWorldBoarderFinderMode");
     }
-
+    
     public boolean getScoreBoardMode() {
-        return plugin.getConfig().getBoolean(gamePath + "scoreBoardEnable");
+        return this.plugin.getConfig().getBoolean(this.gamePath + "scoreBoardEnable");
     }
-
+    
     public boolean getWorldBoarderMode() {
-        return plugin.getConfig().getBoolean(gamePath + "worldBoarder.enable");
+        return this.plugin.getConfig().getBoolean(this.gamePath + "worldBoarder.enable");
     }
-
+    
     public Location getWorldBoarderLocation() {
-        World world = Bukkit.getWorld(plugin.getConfig().getString(gamePath + "worldBoarder.location.world"));
-        int x = plugin.getConfig().getInt(gamePath + "worldBoarder.location.x");
-        int y = plugin.getConfig().getInt(gamePath + "worldBoarder.location.y");
-        int z = plugin.getConfig().getInt(gamePath + "worldBoarder.location.z");
+        final World world = Bukkit.getWorld(this.plugin.getConfig().getString(this.gamePath + "worldBoarder.location.world"));
+        final int x = this.plugin.getConfig().getInt(this.gamePath + "worldBoarder.location.x");
+        final int y = this.plugin.getConfig().getInt(this.gamePath + "worldBoarder.location.y");
+        final int z = this.plugin.getConfig().getInt(this.gamePath + "worldBoarder.location.z");
         return new Location(world, x, y, z);
     }
-
+    
     public WorldBorder getWorldBoarder() {
-        return Bukkit.getWorld(plugin.getConfig().getString(gamePath + "worldBoarder.location.world")).getWorldBorder();
+        return Bukkit.getWorld(this.plugin.getConfig().getString(this.gamePath + "worldBoarder.location.world")).getWorldBorder();
     }
-
+    
     public int getWorldBoarderSizePerPlayer() {
-        return plugin.getConfig().getInt(gamePath + "worldBoarder.sizePerPlayer");
+        return this.plugin.getConfig().getInt(this.gamePath + "worldBoarder.sizePerPlayer");
     }
-
+    
     public double getWorldBoarderOutDamage() {
-        return plugin.getConfig().getDouble(gamePath + "worldBoarder.outDamage");
+        return this.plugin.getConfig().getDouble(this.gamePath + "worldBoarder.outDamage");
     }
-
+    
     public int getWorldBoarderMinSize() {
-        return plugin.getConfig().getInt(gamePath + "worldBoarder.minSize");
+        return this.plugin.getConfig().getInt(this.gamePath + "worldBoarder.minSize");
     }
-
+    
     public int getWorldBoarderSpeed() {
-        return plugin.getConfig().getInt(gamePath + "worldBoarder.speed");
+        return this.plugin.getConfig().getInt(this.gamePath + "worldBoarder.speed");
     }
-
-    public Location getLocation(String locationPath) {
-        String worldName = plugin.getConfig().getString(gamePath + locationPath + ".world");
-        if (worldName == null) return null;
-        World world = Bukkit.getWorld(worldName);
-        double x = Double.parseDouble(plugin.getConfig().getString(gamePath  + locationPath + ".x"));
-        double y = Double.parseDouble(plugin.getConfig().getString(gamePath + locationPath + ".y"));
-        double z = Double.parseDouble(plugin.getConfig().getString(gamePath + locationPath + ".z"));
-        float yaw = Float.parseFloat(plugin.getConfig().getString(gamePath + locationPath + ".yaw"));
-        float pitch = Float.parseFloat(plugin.getConfig().getString(gamePath + locationPath + ".pitch"));
-        return new Location(world, x, y, z, yaw, pitch);
-    }
-
-    public Location getLocation(String locationPath, int locationNumber) {
-        String worldName = plugin.getConfig().getString(gamePath + locationPath + "." + locationNumber + ".world");
-        if (worldName == null) return null;
-        World world = Bukkit.getWorld(worldName);
-        double x = Double.parseDouble(plugin.getConfig().getString(gamePath + locationPath + "." + locationNumber + ".x"));
-        double y = Double.parseDouble(plugin.getConfig().getString(gamePath + locationPath + "." + locationNumber + ".y"));
-        double z = Double.parseDouble(plugin.getConfig().getString(gamePath + locationPath + "." + locationNumber + ".z"));
-        float yaw = Float.parseFloat(plugin.getConfig().getString(gamePath + locationPath + "." + locationNumber + ".yaw"));
-        float pitch = Float.parseFloat(plugin.getConfig().getString(gamePath + locationPath + "." + locationNumber + ".pitch"));
-        return new Location(world, x, y, z, yaw, pitch);
-    }
-
-    public int getLocationAmount(String locationPath) {
-        return plugin.getConfig().getInt(gamePath + locationPath + "Amount");
-    }
-
-    public List<Location> getLocationList(String locationPath) {
-        List<Location> locationList = new ArrayList<>();
-        for (int i = 1; i < getLocationAmount(locationPath) + 1; i++) {
-            locationList.add(getLocation(locationPath, i));
+    
+    public Location getLocation(final String locationPath) {
+        final String worldName = this.plugin.getConfig().getString(this.gamePath + locationPath + ".world");
+        if (worldName == null) {
+            return null;
         }
-        return locationList;
+        final World world = Bukkit.getWorld(worldName);
+        final double x = Double.parseDouble(this.plugin.getConfig().getString(this.gamePath + locationPath + ".x"));
+        final double y = Double.parseDouble(this.plugin.getConfig().getString(this.gamePath + locationPath + ".y"));
+        final double z = Double.parseDouble(this.plugin.getConfig().getString(this.gamePath + locationPath + ".z"));
+        final float yaw = Float.parseFloat(this.plugin.getConfig().getString(this.gamePath + locationPath + ".yaw"));
+        final float pitch = Float.parseFloat(this.plugin.getConfig().getString(this.gamePath + locationPath + ".pitch"));
+        return new Location(world, x, y, z, yaw, pitch);
     }
 
-    public String getInventoryTitle(String invName) {
-        return plugin.getConfig().getString("inventories." + invName + ".title");
+    public String getInventoryTitle(final String invName) {
+        return this.plugin.getConfig().getString("inventories." + invName + ".title");
     }
-
-    public List<String> getInventoryCmd(String invName, int index) {
-        return plugin.getConfig().getStringList("inventories." + invName + "." + index + "Cmd");
+    
+    public List<String> getInventoryCmd(final String invName, final int index) {
+        return this.plugin.getConfig().getStringList("inventories." + invName + "." + index + "Cmd");
     }
-
-    public List<String> getCmdByTitle(String title, int index) {
-        for (String invName : getInventoryList()) {
-            if (getInventoryTitle(invName).equals(title))
-                return getInventoryCmd(invName, index);
+    
+    public List<String> getCmdByTitle(final String title, final int index) {
+        for (final String invName : this.getInventoryList()) {
+            if (this.getInventoryTitle(invName).equals(title)) {
+                return this.getInventoryCmd(invName, index);
+            }
         }
         return null;
     }
-
+    
     public List<String> getInventoryList() {
-        return plugin.getConfig().getStringList("inventoryList");
+        return this.plugin.getConfig().getStringList("inventoryList");
     }
-
+    
     public List<String> getInventoryTitleList() {
-        List<String> inventoryList = getInventoryList();
-        List<String> titleList = new ArrayList<>();
-        for (String invName : inventoryList)
-            titleList.add(plugin.getConfig().getString("inventories." + invName + ".title"));
+        final List<String> inventoryList = this.getInventoryList();
+        final List<String> titleList = new ArrayList<>();
+        for (final String invName : inventoryList) {
+            titleList.add(this.plugin.getConfig().getString("inventories." + invName + ".title"));
+        }
         return titleList;
     }
-
-    public Inventory getInventory(String invName) {
-        if (plugin.getConfig().getStringList("inventoryList").contains(invName)) {
-            int size = plugin.getConfig().getInt("inventories." + invName + ".size");
-            String title = plugin.getConfig().getString("inventories." + invName + ".title");
-            Inventory inventory = Bukkit.createInventory(null, size, title);
-            for (int i = 0; i < size; i++) {
-                ItemStack itemStack = plugin.getConfig().getItemStack("inventories." + invName + ".items." + i);
-                if (itemStack != null) inventory.setItem(i, itemStack);
+    
+    public Inventory getInventory(final String invName) {
+        if (this.plugin.getConfig().getStringList("inventoryList").contains(invName)) {
+            final int size = this.plugin.getConfig().getInt("inventories." + invName + ".size");
+            final String title = this.plugin.getConfig().getString("inventories." + invName + ".title");
+            final Inventory inventory = Bukkit.createInventory(null, size, title);
+            for (int i = 0; i < size; ++i) {
+                final ItemStack itemStack = this.plugin.getConfig().getItemStack("inventories." + invName + ".items." + i);
+                if (itemStack != null) {
+                    inventory.setItem(i, itemStack);
+                }
             }
             return inventory;
-        } else return Bukkit.createInventory(null, 27, "이 인벤토리는 존재하지 않음");
+        }
+        return Bukkit.createInventory(null, 27, "\uc774 \uc778\ubca4\ud1a0\ub9ac\ub294 \uc874\uc7ac\ud558\uc9c0 \uc54a\uc74c");
     }
-
-
-
+    
+    public ItemStack getItem(final String kitName, final int index) {
+        if (this.plugin.getConfig().getStringList("kitList").contains(kitName)) {
+            return this.plugin.getConfig().getItemStack("kits." + kitName + ".items." + index);
+        }
+        return new ItemStack(Material.BEDROCK);
+    }
+    
+    public ItemStack getItem(final String itemName) {
+        if (this.plugin.getConfig().getStringList("itemList").contains(itemName)) {
+            return this.plugin.getConfig().getItemStack("items." + itemName);
+        }
+        return new ItemStack(Material.BEDROCK);
+    }
 }

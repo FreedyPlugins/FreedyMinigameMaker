@@ -1,3 +1,7 @@
+// 
+// Decompiled by Procyon v0.5.36
+// 
+
 package freedy.freedyminigamemaker.events;
 
 import freedy.freedyminigamemaker.FreedyMinigameMaker;
@@ -11,32 +15,54 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 
 import java.util.List;
 
-public class ClickEvent implements Listener {
-
-    FreedyMinigameMaker plugin;
-
+public class ClickEvent implements Listener
+{
     MiniGames miniGames;
-
-    public ClickEvent(FreedyMinigameMaker plugin) {
-        this.plugin = plugin;
-        this.miniGames = plugin.miniGames;
+    
+    public ClickEvent() {
+        this.miniGames = FreedyMinigameMaker.miniGames;
     }
-
+    
     @EventHandler
-    public void onClick(InventoryClickEvent event) {
-        Player player = (Player) event.getWhoClicked();
-            MiniGame miniGame = miniGames.getNoneGame();
-            String title = event.getInventory().getTitle();
-            int index = event.getSlot();
-            if (miniGame.isExistingTitle(title)) {
-                event.setCancelled(true);
-                List<String> cmdList = miniGame.getCmdByTitle(title, index);
-                for (String cmd : cmdList) {
-                    if (cmd != null)
-                        Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd
-                                .replace("{player}", player.getName()));
+    public void onClick(final InventoryClickEvent event) {
+        final Player player = (Player) event.getWhoClicked();
+        if (this.miniGames.isJoined(player)) {
+            final MiniGame miniGame = this.miniGames.getJoined(player);
+            if (event.getClickedInventory() != null && event.getClickedInventory().getHolder() instanceof Player) {
+                for (final String cmd : miniGame.getMessageList("PlayerInventoryClickCmd")) {
+                    if (cmd != null) {
+                        String output = miniGame.executeEventCommands(cmd
+                                .replace("{slot}", String.valueOf(event.getSlot()))
+                                , player);
+                        if (output.equals("false")) {
+                            event.setCancelled(true);
+                        }
+                    }
                 }
             }
+            final String title = event.getInventory().getTitle();
+            final int index = event.getSlot();
+            if (miniGame.isExistingTitle(title)) {
+                for (final String cmd : miniGame.getMessageList(miniGame.getInvName(title) + "ClickCmd")) {
+                    if (cmd != null) {
+                        String output = miniGame.executeEventCommands(cmd.replace("{slot}", String.valueOf(index))
+                                , player);
+                        if (output.equals("false")) {
+                            event.setCancelled(true);
+                        }
 
+                    }
+                }
+                final List<String> cmdList = miniGame.getCmdByTitle(title, index);
+                for (final String cmd : cmdList) {
+                    if (cmd != null) {
+                        String output = miniGame.executeEventCommands(cmd, player);
+                        if (output.equals("false")) {
+                            event.setCancelled(true);
+                        }
+                    }
+                }
+            }
+        }
     }
 }

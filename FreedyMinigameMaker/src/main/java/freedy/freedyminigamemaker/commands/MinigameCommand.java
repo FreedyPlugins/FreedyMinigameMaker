@@ -1,3 +1,7 @@
+// 
+// Decompiled by Procyon v0.5.36
+// 
+
 package freedy.freedyminigamemaker.commands;
 
 import freedy.freedyminigamemaker.FreedyMinigameMaker;
@@ -10,403 +14,502 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.PlayerInventory;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class MinigameCommand implements CommandExecutor {
-
+public class MinigameCommand implements CommandExecutor
+{
     MiniGames miniGames;
-
     private final FreedyMinigameMaker plugin;
-
-    public MinigameCommand(FreedyMinigameMaker plugin) {
+    
+    public MinigameCommand(final FreedyMinigameMaker plugin) {
         this.plugin = plugin;
-        this.miniGames = plugin.miniGames;
+        this.miniGames = FreedyMinigameMaker.miniGames;
     }
-
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    
+    public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage("§c플레이어만 실행할 수 있습니다");
+            sender.sendMessage("§c\ud50c\ub808\uc774\uc5b4\ub9cc \uc2e4\ud589\ud560 \uc218 \uc788\uc2b5\ub2c8\ub2e4");
             return true;
         }
-        Player player = (Player) sender;
-        Location playerLocation = player.getLocation();
+        final Player player = (Player)sender;
+        final Location playerLocation = player.getLocation();
         if (args.length != 0) {
-            switch (args[0]) {
-                case "gui":
-                    if (args.length == 2) miniGames.getNoneGame().openInv(player, args[1]);
-                    else if (args.length == 3) miniGames.getNoneGame().openInv(Bukkit.getPlayer(args[2]), args[1]);
-                    else player.sendMessage("§c사용법: /fmg gui <메뉴이름> [플레이어]");
-                    break;
-                case "join":
-                    if (args.length == 2) miniGames.get(args[1]).add(player);
-                    else if (args.length == 3) miniGames.get(args[1]).add(Bukkit.getPlayer(args[2]));
-                    else player.sendMessage("§c사용법: /fmg join <게임이름> [플레이어]");
-                    break;
-                case "joinAll":
-                    if (player.hasPermission("freedyminigamemaker.admin")) {
-                        if (args.length == 2) {
-                            for (Player p : Bukkit.getOnlinePlayers()) {
-                                miniGames.get(args[1]).add(p);
-                                miniGames.get(args[1]).getPlayerData(p).dropItemMode = true;
-                            }
-                        } else player.sendMessage("§c사용법: /fmg joinAll <게임이름>");
+            final String s = args[0];
+            switch (s) {
+                case "join": {
+                    if (args.length == 2) {
+                        if (!player.hasPermission("freedyminigamemaker.admin")
+                                && !player.hasPermission("freedyminigamemaker.join")) {
+                            break;
+                        }
+                        this.miniGames.get(args[1]).add(player);
+                        break;
                     }
-                    break;
-                case "quitAll":
-                    if (player.hasPermission("freedyminigamemaker.admin")) {
-                        if (args.length == 2) {
-                            miniGames.get(args[1]).removeAll(miniGames.get(args[1]).playerList);
-                        } else player.sendMessage("§c사용법: /fmg quitAll <게임이름>");
+                    if (args.length == 3) {
+                        if (!player.hasPermission("freedyminigamemaker.admin")) {
+                            break;
+                        }
+                        this.miniGames.get(args[1]).add(Bukkit.getPlayer(args[2]));
+                        break;
                     }
+                    player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg join <\uac8c\uc784\uc774\ub984> [\ud50c\ub808\uc774\uc5b4]");
                     break;
-                case "quit":
-                    if (miniGames.isJoined(player)) {
-                        MiniGame miniGame = miniGames.getJoined(player);
+                }
+                case "joinAll": {
+                    if (!player.hasPermission("freedyminigamemaker.admin")) {
+                        break;
+                    }
+                    if (args.length == 2) {
+                        for (final Player p : Bukkit.getOnlinePlayers()) {
+                            this.miniGames.get(args[1]).add(p);
+                        }
+                        break;
+                    }
+                    player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg joinAll <\uac8c\uc784\uc774\ub984>");
+                    break;
+                }
+                case "quitAll": {
+                    if (!player.hasPermission("freedyminigamemaker.admin")) {
+                        break;
+                    }
+                    if (args.length == 2) {
+                        this.miniGames.get(args[1]).removeAll();
+                        break;
+                    }
+                    player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg quitAll <\uac8c\uc784\uc774\ub984>");
+                    break;
+                }
+                case "quitAllGames": {
+                    if (!player.hasPermission("freedyminigamemaker.admin")) {
+                        break;
+                    }
+                    for (MiniGame miniGame : FreedyMinigameMaker.miniGames.miniGames.values()) {
+                        while(miniGame.playerList.size() != 0) {
+                            Player p = miniGame.playerList.get(0);
+                            miniGame.playerList.remove(0);
+                            miniGame.kick(p);
+                            miniGame.stop();
+                        }
+                        miniGame.stop();
+                        miniGames.reset();
+                    }
+
+                    player.sendMessage("§a모든 미니게임이 중지 되었습니다");
+                    break;
+                }
+                case "quit": {
+                    if (!player.hasPermission("freedyminigamemaker.admin")
+                            && !player.hasPermission("freedyminigamemaker.quit")) {
+                        break;
+                    }
+
+                    if (this.miniGames.isJoined(player)) {
+                        final MiniGame miniGame = this.miniGames.getJoined(player);
                         miniGame.remove(player);
                         miniGame.stop();
-                    } else player.sendMessage("§c참여중인 미니게임이 없습니다");
+                        break;
+                    }
+                    player.sendMessage("§c\ucc38\uc5ec\uc911\uc778 \ubbf8\ub2c8\uac8c\uc784\uc774 \uc5c6\uc2b5\ub2c8\ub2e4");
                     break;
-                case "create":
-                    if (player.hasPermission("freedyminigamemaker.admin")) {
-                        if (args.length == 6) {
-                            miniGames.get(args[1]).create(
-                                    Integer.parseInt(args[2]),
-                                    Integer.parseInt(args[3]),
-                                    Integer.parseInt(args[4]),
-                                    Integer.parseInt(args[5])
-                            );
-                            miniGames.add(args[1]);
-                            player.sendMessage("§6" + "게임 " + args[1] + "이 생성되었습니다");
-                        } else player.sendMessage("§c사용법: /fmg create <게임이름> <최대인원> <시작인원> <시작대기초> <종료대기초>");
-                    } else player.sendMessage("§c권한이 없습니다.");
+                }
+                case "create": {
+                    if (!player.hasPermission("freedyminigamemaker.admin")) {
+                        player.sendMessage("§c\uad8c\ud55c\uc774 \uc5c6\uc2b5\ub2c8\ub2e4.");
+                        break;
+                    }
+                    if (args.length != 5) {
+                        player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg create <\uac8c\uc784\uc774\ub984> <\ucd5c\ub300\uc778\uc6d0> <\uc2dc\uc791\uc778\uc6d0> <\uc2dc\uc791\ub300\uae30\ucd08>");
+                        break;
+                    }
+                    if (args[1].length() <= 16) {
+                        this.miniGames.get(args[1]).create(Integer.parseInt(args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]));
+                        this.miniGames.add(args[1]);
+                        player.sendMessage("§6\uac8c\uc784 " + args[1] + "\uc774 \uc0dd\uc131\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                        break;
+                    }
+                    player.sendMessage("§\uac8c\uc784\uc774\ub984\uc740 \ucd5c\ub300 16\uc790 \uae4c\uc9c0 \ubc16\uc5d0 \uc548\ub429\ub2c8\ub2e4.");
                     break;
-                case "remove":
-                    if (player.hasPermission("freedyminigamemaker.admin")) {
-                        if (args.length == 2) {
-                            miniGames.getEditor(args[1]).remove(args[1]);
-                            miniGames.remove(args[1]);
-                            player.sendMessage("§6게임 " + args[1] + "이 삭제되었습니다");
-                        } else player.sendMessage("§c사용법: /fmg remove <게임이름>");
-                    } else player.sendMessage("§c권한이 없습니다.");
+                }
+                case "remove": {
+                    if (!player.hasPermission("freedyminigamemaker.admin")) {
+                        player.sendMessage("§c\uad8c\ud55c\uc774 \uc5c6\uc2b5\ub2c8\ub2e4.");
+                        break;
+                    }
+                    if (args.length == 2) {
+                        this.miniGames.getEditor(args[1]).remove(args[1]);
+                        this.miniGames.remove(args[1]);
+                        player.sendMessage("§6\uac8c\uc784 " + args[1] + "\uc774 \uc0ad\uc81c\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                        break;
+                    }
+                    player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg remove <\uac8c\uc784\uc774\ub984>");
                     break;
-                case "set":
-                    if (player.hasPermission("freedyminigamemaker.admin")) {
-                        String team;
-                        if (args.length > 2) {
-                            switch (args[2]) {
-                                case "wait":
-                                    //String path, String dataType
-                                    miniGames.getEditor(args[1]).setLocation("waitLocation",
-                                            playerLocation.getWorld().getName(),
-                                            playerLocation.getX(),
-                                            playerLocation.getY(),
-                                            playerLocation.getZ(),
-                                            playerLocation.getYaw(),
-                                            playerLocation.getPitch());
-
-
-                                    player.sendMessage("§6위치가 " + args[1] + " 게임에 대기 위치에 저장 되었습니다");
-                                    break;
-                                case "start":
-                                    //String path, String dataType
-                                    team = "default";
-                                    if (args.length == 4) team = args[3];
-                                    miniGames.getEditor(args[1]).addLocation(team + "StartLocation",
-                                            playerLocation.getWorld().getName(),
-                                            playerLocation.getX(),
-                                            playerLocation.getY(),
-                                            playerLocation.getZ(),
-                                            playerLocation.getYaw(),
-                                            playerLocation.getPitch());
-                                    player.sendMessage("§6위치가 " + args[1] + " 게임에 " + team + " 시작위치에 저장되었습니다");
-                                    break;
-                                case "end":
-                                    //String path, String dataType
-                                    miniGames.getEditor(args[1]).setLocation("endLocation",
-                                            playerLocation.getWorld().getName(),
-                                            playerLocation.getX(),
-                                            playerLocation.getY(),
-                                            playerLocation.getZ(),
-                                            playerLocation.getYaw(),
-                                            playerLocation.getPitch());
-                                    player.sendMessage("§6위치가 " + args[1] + " 게임에 종료 위치에 저장 되었습니다");
-                                    break;
-                                case "addBlock":
-                                    if (args.length == 4) {
-                                        List<String> allowedBlocks = plugin.getConfig().getStringList("miniGames." + args[1] + ".allowedBlocks");
-                                        allowedBlocks.add(args[3]);
-                                        plugin.getConfig().set("miniGames." + args[1] + ".allowedBlocks", allowedBlocks);
-                                        plugin.saveConfig();
-                                        player.sendMessage("§6" + args[3] + "이 " + args[1] + "게임에 랜덤 블럭 리스트에 저장되었습니다");
-                                    } else {
-                                        player.sendMessage("§c사용법: /fmg set <게임이름> addBlock <블럭이름>");
-                                        player.sendMessage("블럭목록: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html");
-                                    }
-                                    break;
-                                case "addDropItem":
-                                    if (args.length == 5) {
-                                        List<String> dropItemList = plugin.getConfig().getStringList("miniGames." + args[1] + ".dropItems.dropList");
-                                        dropItemList.add(args[3]);
-                                        plugin.getConfig().set("miniGames." + args[1] + ".dropItems.dropList", dropItemList);
-                                        plugin.getConfig().set("miniGames." + args[1] + ".dropItems.drop." + args[3], Integer.parseInt(args[4]));
-                                        plugin.saveConfig();
-                                        player.sendMessage("§6" + args[3] + " 블럭이 " + args[1] + "게임에 " + args[4] + " 만큼 떨꿔짐에 저장되었습니다");
-                                    } else {
-                                        player.sendMessage("§c사용법: /fmg set <게임이름> addDropItem <블럭이름> <아이템수>");
-                                        player.sendMessage("블럭목록: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html");
-                                    }
-                                    break;
-                                case "gameType":
-                                    if (args.length == 4) {
-                                        plugin.getConfig().set("miniGames." + args[1] + ".gameType", args[3]);
-                                        plugin.saveConfig();
-                                        player.sendMessage("§6" + args[3] + "이 " + args[1] + "게임에 타입에 저장되었습니다");
-                                    } else
-                                        player.sendMessage("§c사용법: /fmg set <게임이름> gameType <hideAndSeek|zombieMode>");
-                                    break;
-                                case "teamMode":
-                                    if (args.length == 4) {
-                                        plugin.getConfig().set("miniGames." + args[1] + ".teamMode", Boolean.parseBoolean(args[3]));
-
-                                        plugin.saveConfig();
-                                        player.sendMessage("§6" + args[3] + "이 " + args[1] + "게임에 티밍여부에 저장되었습니다");
-                                    } else player.sendMessage("§c사용법: /fmg set <게임이름> teamMode <true|false>");
-                                    break;
-                                case "maxHealth":
-                                    if (args.length >= 4) {
-                                        if (args.length == 5) team = args[4];
-                                        else team = "default";
-                                        plugin.getConfig().set("miniGames." + args[1] + "." + team + "TeamStartMaxHeart", Double.parseDouble(args[3]));
-                                        plugin.saveConfig();
-                                        player.sendMessage("§6최대체력이 " + args[1] + " 게임에 " + team + "에 저장되었습니다");
-                                    } else player.sendMessage("§c사용법: /fmg set <게임이름> maxHealth <체력> [팀이름]");
-                                    break;
-                                case "worldBoarder":
-                                    if (args.length >= 4) {
-                                        switch (args[3]) {
-                                            case "setLocation":
-                                                //String path, String dataType
-                                                miniGames.getEditor(args[1]).setLocation("worldBoarder.location",
-                                                        playerLocation.getWorld().getName(),
-                                                        playerLocation.getX(),
-                                                        playerLocation.getY(),
-                                                        playerLocation.getZ());
-                                                player.sendMessage("§6위치가 " + args[1] + " 월드 보더 중심 위치에 저장 되었습니다");
-                                                break;
-                                            case "enable":
-                                                if (args.length == 5) {
-                                                    plugin.getConfig().set("miniGames." + args[1] + ".worldBoarder.enable", Boolean.parseBoolean(args[4]));
-
-                                                    plugin.saveConfig();
-                                                    player.sendMessage("§6" + args[4] + "이 " + args[1] + "게임에 참여시 월드 보더 설정 여부에 저장되었습니다");
-                                                } else player.sendMessage("§c사용법: /fmg set <게임이름> worldBoarder enable <true|false>");
-                                                break;
-                                            case "sizePerPlayer":
-                                                if (args.length == 5) {
-                                                    plugin.getConfig().set("miniGames." + args[1] + ".worldBoarder.sizePerPlayer", Integer.parseInt(args[4]));
-                                                    plugin.saveConfig();
-
-                                                    player.sendMessage("§6" + args[4] + "이 " + args[1] + "게임에 플레이어수의비례한월드보더크기배수에 저장되었습니다");
-
-                                                } else
-                                                    player.sendMessage("§c사용법: /fmg set <게임이름> worldBoarder sizePerPlayer <플레이어수의비례한월드보더크기배수>");
-                                                break;
-                                            case "outDamage":
-                                                if (args.length == 5) {
-                                                    plugin.getConfig().set("miniGames." + args[1] + ".worldBoarder.outDamage", Integer.parseInt(args[4]));
-                                                    plugin.saveConfig();
-
-                                                    player.sendMessage("§6" + args[4] + "이 " + args[1] + "게임에 월드 보더 바깥 데미지에 저장되었습니다");
-
-                                                } else
-                                                    player.sendMessage("§c사용법: /fmg set <게임이름> worldBoarder outDamage <플레이어수의비례한월드보더크기배수>");
-                                                break;
-                                            case "minSize":
-                                                if (args.length == 5) {
-                                                    plugin.getConfig().set("miniGames." + args[1] + ".worldBoarder.minSize", Integer.parseInt(args[4]));
-                                                    plugin.saveConfig();
-
-                                                    player.sendMessage("§6" + args[4] + "이 " + args[1] + "게임에 월드 보더 최소 사이즈에 저장되었습니다");
-
-                                                } else
-                                                    player.sendMessage("§c사용법: /fmg set <게임이름> worldBoarder minSize <최소사이즈>");
-                                                break;
-                                            case "speed":
-                                                if (args.length == 5) {
-                                                    plugin.getConfig().set("miniGames." + args[1] + ".worldBoarder.speed", Integer.parseInt(args[4]));
-                                                    plugin.saveConfig();
-
-                                                    player.sendMessage("§6" + args[4] + "이 " + args[1] + "게임에 월드 보더 감소 속도에 저장되었습니다");
-
-                                                } else
-                                                    player.sendMessage("§c사용법: /fmg set <게임이름> worldBoarder minSize <감소속도>");
-                                                break;
-                                        }
-                                    } else player.sendMessage("§c사용법: /fmg set <게임이름> worldBoarder <enable|sizePerPlayer|setLocation|outDamage|minSize|speed> ...");
-                                    break;
-                                case "scoreBoard":
-                                    if (args.length >= 4) {
-                                        switch (args[3]) {
-                                            case "enable":
-                                                if (args.length == 5) {
-                                                    plugin.getConfig().set("miniGames." + args[1] + ".scoreBoardEnable", Boolean.parseBoolean(args[4]));
-                                                    plugin.saveConfig();
-                                                    player.sendMessage("§6" + args[4] + "이 " + args[1] + "게임에 스코어 보드 사용 여부에 저장되었습니다");
-
-                                                } else player.sendMessage("§c사용법: /fmg set <게임이름> scoreBoard enable <true|false>");
-
-                                                break;
-                                            case "addMsg":
-                                                if (args.length == 5) {
-                                                    miniGames.getEditor(args[1]).addMessage("scoreBoard",
-                                                            ChatColor.translateAlternateColorCodes('&', args[4].replace("{spc}", " ")));
-                                                    player.sendMessage("§6메새지가 " + args[1] + " 스코어보드 목록에 추가 되었습니다");
-                                                } else {
-                                                    player.sendMessage("§c사용법: /fmg set <게임이름> scoreBoard addMsg <메세지>");
-                                                    player.sendMessage("§c참고: <명령줄> 입력란에는 공백을 {spc}으로 넣으세요");
-                                                }
-                                                
-                                                break;
-                                            case "setTitle":
-                                                if (args.length == 5) {
-                                                    plugin.getConfig().set("miniGames." + args[1] + ".scoreBoardTitle", ChatColor.translateAlternateColorCodes('&', args[4].replace("{spc}", " ")));
-                                                    plugin.saveConfig();
-                                                    player.sendMessage("§6스코어보드 제목이 " + args[1] + " 게임에 저장되었습니다");
-                                                } else {
-                                                    player.sendMessage("§c사용법: /fmg set <게임이름> scoreBoard setTitle <메세지>");
-                                                    player.sendMessage("§c참고: <명령줄> 입력란에는 공백을 {spc}으로 넣으세요");
-                                                }
-                                                break;
-                                        }
-                                    } else player.sendMessage("§c사용법: /fmg set <게임이름> scoreBoard <enable|addMsg|setTitle> ...");
-                                    break;
-                                case "inv":
-                                    if (args.length >= 4) {
-                                        switch (args[3]) {
-                                            case "addItem":
-                                                if (args.length == 7) {
-
-                                                    plugin.getConfig().set("inventories." + args[4] + ".items." + args[5]
-                                                            , player.getInventory().getItemInMainHand());
-
-                                                    List<String> cmdList = plugin.getConfig().getStringList("inventories." + args[4] + "." + args[5] + "Cmd");
-                                                    cmdList.add(ChatColor.translateAlternateColorCodes('&', args[6]
-                                                            .replace("{spc}", " ")));
-                                                    plugin.getConfig().set("inventories." + args[4] + "." + args[5] + "Cmd", cmdList);
-                                                    plugin.saveConfig();
-                                                    player.sendMessage("§6명령줄이 " + args[1] + "게임의 메뉴 " + args[4] + "의 " + args[5] + "번줄에 손에 들고 있던 아이템과 저장되었습니다");
-                                                } else if (args.length == 6) {
-                                                    plugin.getConfig().set("inventories." + args[4] + ".items." + args[5]
-                                                            , player.getInventory().getItemInMainHand());
-                                                    plugin.saveConfig();
-                                                    player.sendMessage("§6아이템이 " + args[1] + "게임의 메뉴 " + args[4] + "의 " + args[5] + "번줄에 저장되었습니다");
-
-                                                } else {
-                                                    player.sendMessage("§c사용법: /fmg set <게임이름> inv addItem <메뉴이름> <아이템위치> [명령줄]");
-                                                    player.sendMessage("§c참고: <명령줄> 입력란에는 공백을 {spc}으로 넣으세요");
-                                                }
-
-                                                break;
-                                            case "create":
-                                                if (args.length == 7) {
-                                                    plugin.getConfig().set("inventories." + args[4] + ".title"
-                                                            , ChatColor.translateAlternateColorCodes('&', args[6].replace("{spc}", " ")));
-                                                    plugin.getConfig().set("inventories." + args[4] + ".size"
-                                                            , Integer.parseInt(args[5]));
-                                                    List<String> inventoryList = plugin.getConfig().getStringList("inventoryList");
-                                                    if (!inventoryList.contains(args[4])) inventoryList.add(args[4]);
-                                                    plugin.getConfig().set("inventoryList", inventoryList);
-                                                    plugin.saveConfig();
-                                                    player.sendMessage("§6메뉴가 " + args[1] + " 게임에 저장되었습니다");
-                                                } else player.sendMessage("§c사용법: /fmg set <게임이름> inv create <메뉴이름> <9|18|27|36|45|54> <타이틀>");
-                                                break;
-                                            default: player.sendMessage("§c사용법: /fmg set <게임이름> inv <addItem|create> ...");
-                                        }
-                                    } else player.sendMessage("§c사용법: /fmg set <게임이름> inv <addItem|create> ...");
-                                    break;
-                                case "needClearInv":
-                                    if (args.length == 4) {
-                                        plugin.getConfig().set("miniGames." + args[1] + ".needClearInv", Boolean.parseBoolean(args[3]));
-
-                                        plugin.saveConfig();
-                                        player.sendMessage("§6" + args[3] + "이 " + args[1] + "게임에 참여시 인벤을 비워야 하는지 여부에 저장되었습니다");
-                                    } else player.sendMessage("§c사용법: /fmg set <게임이름> needClearInv <true|false>");
-                                    break;
-                                case "startGameMode":
-                                    if (args.length == 4) {
-                                        plugin.getConfig().set("miniGames." + args[1] + ".startGameMode", Boolean.parseBoolean(args[3]));
-
-                                        plugin.saveConfig();
-                                        player.sendMessage("§6" + args[3] + "이 " + args[1] + "게임에 참여시 게임 모드를 바꾸는지 여부에 저장되었습니다");
-                                    } else player.sendMessage("§c사용법: /fmg set <게임이름> startGameMode <true|false>");
-                                    break;
-                                case "endGameMode":
-                                    if (args.length == 4) {
-                                        plugin.getConfig().set("miniGames." + args[1] + ".endGameMode", Boolean.parseBoolean(args[3]));
-
-                                        plugin.saveConfig();
-                                        player.sendMessage("§6" + args[3] + "이 " + args[1] + "게임에 퇴장시 게임 모드를 바꾸는지 여부에 저장되었습니다");
-                                    } else player.sendMessage("§c사용법: /fmg set <게임이름> endGameMode <true|false>");
-                                    break;
-                                case "addCmd":
-                                    if (args.length == 5) {
-                                        List<String> cmdList = plugin.getConfig().getStringList("miniGames." + args[1] + "." + args[3] + "Cmd");
-                                        cmdList.add(ChatColor.translateAlternateColorCodes('&', args[4].replace("{spc}", " ")));
-                                        plugin.getConfig().set("miniGames." + args[1] + "." + args[3] + "Cmd", cmdList);
-                                        plugin.saveConfig();
-                                        player.sendMessage("§6명령줄이 " + args[1] + " 게임에 " + args[3] + "에 저장되었습니다");
-                                    } else {
-                                        player.sendMessage("§c사용법: /fmg set <게임이름> addCmd <start|join|quit|conStart|conEnd|winner> <명령줄>");
-                                        player.sendMessage("§c참고: <명령줄> 입력란에는 공백을 {spc}으로 넣으세요");
-                                    }
-                                    break;
-                                case "msg":
-                                    if (args.length == 5) {
-                                        plugin.getConfig().set("miniGames." + args[1] + "." + args[3] + "Msg", ChatColor.translateAlternateColorCodes('&', args[4].replace("{spc}", " ")));
-                                        plugin.saveConfig();
-                                        player.sendMessage("§6메세지가 " + args[1] + " 게임에 " + args[3] + "에 저장되었습니다");
-                                    } else {
-                                        player.sendMessage("§c사용법: /fmg set <게임이름> msg <join|quit|start|end|noWinnerEndMsg|redWinEnd|blueWinEnd|beZombie|extraDamage|dropItem|resistingDamage|startTimer|endTimer> <메세지>");
-                                        player.sendMessage("§c참고: <명령줄> 입력란에는 공백을 {spc}으로 넣으세요");
-                                    }
-                                    break;
-                                case "loc":
-                                    if (args.length == 4) {
-                                        miniGames.getEditor(args[1]).setLocation(args[3] + "Location",
-                                                playerLocation.getWorld().getName(),
-                                                playerLocation.getX(),
-                                                playerLocation.getY(),
-                                                playerLocation.getZ(),
-                                                playerLocation.getYaw(),
-                                                playerLocation.getPitch());
-                                        player.sendMessage("§6위치가 " + args[1] + " 커스텀 위치에 저장 되었습니다");
-                                    } else player.sendMessage("§c사용법: /fmg set <게임이름> loc <customName>");
-                                    break;
-
-                                default:
-                                    player.sendMessage("§c사용법: /fmg set <게임이름> <wait|start|end|addDropItem|gameType|teamMode|maxHealth|worldBoarder|timePerPlayer|worldBoarder|scoreBoard|inv|needClearInv|startGameMode|endGameMode|addCmd|msg|loc> ...");
-
+                }
+                case "set": {
+                    if (!player.hasPermission("freedyminigamemaker.admin")) {
+                        player.sendMessage("§c\uad8c\ud55c\uc774 \uc5c6\uc2b5\ub2c8\ub2e4.");
+                        break;
+                    }
+                    if (args.length > 2) {
+                        final String s2 = args[2];
+                        switch (s2) {
+                            case "wait": {
+                                this.miniGames.getEditor(args[1]).setLocation("waitLocation", playerLocation.getWorld().getName(), playerLocation.getX(), playerLocation.getY(), playerLocation.getZ(), playerLocation.getYaw(), playerLocation.getPitch());
+                                player.sendMessage("§6\uc704\uce58\uac00 " + args[1] + " \uac8c\uc784\uc5d0 \ub300\uae30 \uc704\uce58\uc5d0 \uc800\uc7a5 \ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                break;
                             }
-                        } else
-                            player.sendMessage("§c사용법: /fmg set <게임이름> <wait|start|end|addBlock|addDropItem|gameType|teamMode|maxHealth|startGameMode|quitGameMode|timePerPlayer|worldBoarder|scoreBoard|addCmd|msg|loc> ...");
-                    } else player.sendMessage("§c권한이 없습니다.");
+                            case "start": {
+                                this.miniGames.getEditor(args[1]).setLocation("startLocation", playerLocation.getWorld().getName(), playerLocation.getX(), playerLocation.getY(), playerLocation.getZ(), playerLocation.getYaw(), playerLocation.getPitch());
+                                player.sendMessage("§6위치가 " + args[1] + " 게임에 시작 위치에 저장 되었습니다");
+                                break;
+                            }
+                            case "end": {
+                                this.miniGames.getEditor(args[1]).setLocation("endLocation", playerLocation.getWorld().getName(), playerLocation.getX(), playerLocation.getY(), playerLocation.getZ(), playerLocation.getYaw(), playerLocation.getPitch());
+                                player.sendMessage("§6\uc704\uce58\uac00 " + args[1] + " \uac8c\uc784\uc5d0 \uc885\ub8cc \uc704\uce58\uc5d0 \uc800\uc7a5 \ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                break;
+                            }
+                            case "gameType": {
+                                if (args.length == 4) {
+                                    this.plugin.getConfig().set("miniGames." + args[1] + ".gameType", args[3]);
+                                    this.plugin.saveConfig();
+                                    player.sendMessage("§6" + args[3] + "\uc774 " + args[1] + "\uac8c\uc784\uc5d0 \ud0c0\uc785\uc5d0 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                    break;
+                                }
+                                player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> gameType <hideAndSeek|zombieMode>");
+                                break;
+                            }
+                            case "worldBoarder": {
+                                if (args.length >= 4) {
+                                    final String s3 = args[3];
+                                    switch (s3) {
+                                        case "setLocation": {
+                                            this.miniGames.getEditor(args[1]).setLocation("worldBoarder.location", playerLocation.getWorld().getName(), playerLocation.getX(), playerLocation.getY(), playerLocation.getZ());
+                                            player.sendMessage("§6\uc704\uce58\uac00 " + args[1] + " \uc6d4\ub4dc \ubcf4\ub354 \uc911\uc2ec \uc704\uce58\uc5d0 \uc800\uc7a5 \ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                            break;
+                                        }
+                                        case "enable": {
+                                            if (args.length == 5) {
+                                                this.plugin.getConfig().set("miniGames." + args[1] + ".worldBoarder.enable", Boolean.parseBoolean(args[4]));
+                                                this.plugin.saveConfig();
+                                                player.sendMessage("§6" + args[4] + "\uc774 " + args[1] + "\uac8c\uc784\uc5d0 \ucc38\uc5ec\uc2dc \uc6d4\ub4dc \ubcf4\ub354 \uc124\uc815 \uc5ec\ubd80\uc5d0 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                                break;
+                                            }
+                                            player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> worldBoarder enable <true|false>");
+                                            break;
+                                        }
+                                        case "sizePerPlayer": {
+                                            if (args.length == 5) {
+                                                this.plugin.getConfig().set("miniGames." + args[1] + ".worldBoarder.sizePerPlayer", Integer.parseInt(args[4]));
+                                                this.plugin.saveConfig();
+                                                player.sendMessage("§6" + args[4] + "\uc774 " + args[1] + "\uac8c\uc784\uc5d0 \ud50c\ub808\uc774\uc5b4\uc218\uc758\ube44\ub840\ud55c\uc6d4\ub4dc\ubcf4\ub354\ud06c\uae30\ubc30\uc218\uc5d0 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                                break;
+                                            }
+                                            player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> worldBoarder sizePerPlayer <\ud50c\ub808\uc774\uc5b4\uc218\uc758\ube44\ub840\ud55c\uc6d4\ub4dc\ubcf4\ub354\ud06c\uae30\ubc30\uc218>");
+                                            break;
+                                        }
+                                        case "outDamage": {
+                                            if (args.length == 5) {
+                                                this.plugin.getConfig().set("miniGames." + args[1] + ".worldBoarder.outDamage", Integer.parseInt(args[4]));
+                                                this.plugin.saveConfig();
+                                                player.sendMessage("§6" + args[4] + "\uc774 " + args[1] + "\uac8c\uc784\uc5d0 \uc6d4\ub4dc \ubcf4\ub354 \ubc14\uae65 \ub370\ubbf8\uc9c0\uc5d0 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                                break;
+                                            }
+                                            player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> worldBoarder outDamage <\ud50c\ub808\uc774\uc5b4\uc218\uc758\ube44\ub840\ud55c\uc6d4\ub4dc\ubcf4\ub354\ud06c\uae30\ubc30\uc218>");
+                                            break;
+                                        }
+                                        case "minSize": {
+                                            if (args.length == 5) {
+                                                this.plugin.getConfig().set("miniGames." + args[1] + ".worldBoarder.minSize", Integer.parseInt(args[4]));
+                                                this.plugin.saveConfig();
+                                                player.sendMessage("§6" + args[4] + "\uc774 " + args[1] + "\uac8c\uc784\uc5d0 \uc6d4\ub4dc \ubcf4\ub354 \ucd5c\uc18c \uc0ac\uc774\uc988\uc5d0 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                                break;
+                                            }
+                                            player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> worldBoarder minSize <\ucd5c\uc18c\uc0ac\uc774\uc988>");
+                                            break;
+                                        }
+                                        case "speed": {
+                                            if (args.length == 5) {
+                                                this.plugin.getConfig().set("miniGames." + args[1] + ".worldBoarder.speed", Integer.parseInt(args[4]));
+                                                this.plugin.saveConfig();
+                                                player.sendMessage("§6" + args[4] + "\uc774 " + args[1] + "\uac8c\uc784\uc5d0 \uc6d4\ub4dc \ubcf4\ub354 \uac10\uc18c \uc18d\ub3c4\uc5d0 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                                break;
+                                            }
+                                            player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> worldBoarder minSize <\uac10\uc18c\uc18d\ub3c4>");
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                }
+                                player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> worldBoarder <enable|sizePerPlayer|setLocation|outDamage|minSize|speed> ...");
+                                break;
+                            }
+                            case "scoreBoard": {
+                                if (args.length >= 4) {
+                                    final String s4 = args[3];
+                                    switch (s4) {
+                                        case "enable": {
+                                            if (args.length == 5) {
+                                                this.plugin.getConfig().set("miniGames." + args[1] + ".scoreBoardEnable", Boolean.parseBoolean(args[4]));
+                                                this.plugin.saveConfig();
+                                                player.sendMessage("§6" + args[4] + "\uc774 " + args[1] + "\uac8c\uc784\uc5d0 \uc2a4\ucf54\uc5b4 \ubcf4\ub4dc \uc0ac\uc6a9 \uc5ec\ubd80\uc5d0 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                                break;
+                                            }
+                                            player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> scoreBoard enable <true|false>");
+                                            break;
+                                        }
+                                        case "addMsg": {
+                                            if (args.length == 5) {
+                                                this.miniGames.getEditor(args[1]).addMessage("scoreBoard", ChatColor.translateAlternateColorCodes('&', args[4].replace("{spc}", " ")));
+                                                player.sendMessage("§6\uba54\uc0c8\uc9c0\uac00 " + args[1] + " \uc2a4\ucf54\uc5b4\ubcf4\ub4dc \ubaa9\ub85d\uc5d0 \ucd94\uac00 \ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                                break;
+                                            }
+                                            player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> scoreBoard addMsg <\uba54\uc138\uc9c0>");
+                                            player.sendMessage("§c\ucc38\uace0: <\uba85\ub839\uc904> \uc785\ub825\ub780\uc5d0\ub294 \uacf5\ubc31\uc744 {spc}\uc73c\ub85c \ub123\uc73c\uc138\uc694");
+                                            break;
+                                        }
+                                        case "setTitle": {
+                                            if (args.length == 5) {
+                                                this.plugin.getConfig().set("miniGames." + args[1] + ".scoreBoardTitle", ChatColor.translateAlternateColorCodes('&', args[4].replace("{spc}", " ")));
+                                                this.plugin.saveConfig();
+                                                player.sendMessage("§6\uc2a4\ucf54\uc5b4\ubcf4\ub4dc \uc81c\ubaa9\uc774 " + args[1] + " \uac8c\uc784\uc5d0 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                                break;
+                                            }
+                                            player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> scoreBoard setTitle <\uba54\uc138\uc9c0>");
+                                            player.sendMessage("§c\ucc38\uace0: <\uba85\ub839\uc904> \uc785\ub825\ub780\uc5d0\ub294 \uacf5\ubc31\uc744 {spc}\uc73c\ub85c \ub123\uc73c\uc138\uc694");
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                }
+                                player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> scoreBoard <enable|addMsg|setTitle> ...");
+                                break;
+                            }
+                            case "kit": {
+                                if (args.length == 5) {
+                                    final PlayerInventory inventory = player.getInventory();
+                                    for (int i = 0; i < inventory.getSize(); ++i) {
+                                        this.plugin.getConfig().set("kits." + args[4] + ".items." + i, inventory.getItem(i));
+                                    }
+                                    final List<String> inventoryList = this.plugin.getConfig().getStringList("kitList");
+                                    if (!inventoryList.contains(args[4])) {
+                                        inventoryList.add(args[4]);
+                                    }
+                                    this.plugin.getConfig().set("kitList", inventoryList);
+                                    this.plugin.saveConfig();
+                                    player.sendMessage("§6\ub2f9\uc2e0\uc758 \uc778\ubca4\ud1a0\ub9ac\uc5d0 \uc787\ub294 \uc544\uc774\ud15c\ub4e4\uc774 \ud0b7\uc5d0 " + args[4] + " \uc73c\ub85c \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                    break;
+                                }
+                                player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> kit create <\ud0b7\uc774\ub984>");
+                                break;
+                            }
+                            case "item": {
+                                if (args.length == 4) {
+                                    final PlayerInventory inventory = player.getInventory();
+                                    this.plugin.getConfig().set("items." + args[3], inventory.getItemInMainHand());
+                                    final List<String> itemList = this.plugin.getConfig().getStringList("itemList");
+                                    if (!itemList.contains(args[3])) {
+                                        itemList.add(args[3]);
+                                    }
+                                    this.plugin.getConfig().set("itemList", itemList);
+                                    this.plugin.saveConfig();
+                                    player.sendMessage("§6\ub2f9\uc2e0\uc774 \ub4e4\uace0 \uc787\ub294 \uc544\uc774\ud15c\uc774 " + args[3] + " \uc73c\ub85c \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                    break;
+                                }
+                                player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> item <\ucee4\uc2a4\ud140\uc544\uc774\ud15c\uc774\ub984>");
+                                break;
+                            }
+                            case "inv": {
+                                if (args.length >= 4) {
+                                    final String s5 = args[3];
+                                    switch (s5) {
+                                        case "addItem": {
+                                            if (args.length == 7) {
+                                                this.plugin.getConfig().set("inventories." + args[4] + ".items." + args[5], player.getInventory().getItemInMainHand());
+                                                final List<String> cmdList = this.plugin.getConfig().getStringList("inventories." + args[4] + "." + args[5] + "Cmd");
+                                                cmdList.add(ChatColor.translateAlternateColorCodes('&', args[6].replace("{spc}", " ")));
+                                                this.plugin.getConfig().set("inventories." + args[4] + "." + args[5] + "Cmd", cmdList);
+                                                this.plugin.saveConfig();
+                                                player.sendMessage("§6\uba85\ub839\uc904\uc774 " + args[1] + "\uac8c\uc784\uc758 \uba54\ub274 " + args[4] + "\uc758 " + args[5] + "\ubc88\uc904\uc5d0 \uc190\uc5d0 \ub4e4\uace0 \uc788\ub358 \uc544\uc774\ud15c\uacfc \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                                break;
+                                            }
+                                            if (args.length == 6) {
+                                                this.plugin.getConfig().set("inventories." + args[4] + ".items." + args[5], player.getInventory().getItemInMainHand());
+                                                this.plugin.saveConfig();
+                                                player.sendMessage("§6\uc544\uc774\ud15c\uc774 " + args[1] + "\uac8c\uc784\uc758 \uba54\ub274 " + args[4] + "\uc758 " + args[5] + "\ubc88\uc904\uc5d0 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                                break;
+                                            }
+                                            player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> inv addItem <\uba54\ub274\uc774\ub984> <\uc544\uc774\ud15c\uc704\uce58> [\uba85\ub839\uc904]");
+                                            player.sendMessage("§c\ucc38\uace0: <\uba85\ub839\uc904> \uc785\ub825\ub780\uc5d0\ub294 \uacf5\ubc31\uc744 {spc}\uc73c\ub85c \ub123\uc73c\uc138\uc694");
+                                            break;
+                                        }
+                                        case "create": {
+                                            if (args.length == 7) {
+                                                this.plugin.getConfig().set("inventories." + args[4] + ".title", ChatColor.translateAlternateColorCodes('&', args[6].replace("{spc}", " ")));
+                                                this.plugin.getConfig().set("inventories." + args[4] + ".size", Integer.parseInt(args[5]));
+                                                final List<String> inventoryList2 = this.plugin.getConfig().getStringList("inventoryList");
+                                                if (!inventoryList2.contains(args[4])) {
+                                                    inventoryList2.add(args[4]);
+                                                }
+                                                this.plugin.getConfig().set("inventoryList", inventoryList2);
+                                                this.plugin.saveConfig();
+                                                player.sendMessage("§6\uba54\ub274\uac00 " + args[1] + " \uac8c\uc784\uc5d0 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                                break;
+                                            }
+                                            player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> inv create <\uba54\ub274\uc774\ub984> <9|18|27|36|45|54> <\ud0c0\uc774\ud2c0>");
+                                            break;
+                                        }
+                                        default: {
+                                            player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> inv <addItem|create> ...");
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                }
+                                player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> inv <addItem|create> ...");
+                                break;
+                            }
+                            case "needClearInv": {
+                                if (args.length == 4) {
+                                    this.plugin.getConfig().set("miniGames." + args[1] + ".needClearInv", Boolean.parseBoolean(args[3]));
+                                    this.plugin.saveConfig();
+                                    player.sendMessage("§6" + args[3] + "\uc774 " + args[1] + "\uac8c\uc784\uc5d0 \ucc38\uc5ec\uc2dc \uc778\ubca4\uc744 \ube44\uc6cc\uc57c \ud558\ub294\uc9c0 \uc5ec\ubd80\uc5d0 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                    break;
+                                }
+                                player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> needClearInv <true|false>");
+                                break;
+                            }
+                            case "startGameMode": {
+                                if (args.length == 4) {
+                                    this.plugin.getConfig().set("miniGames." + args[1] + ".startGameMode", Boolean.parseBoolean(args[3]));
+                                    this.plugin.saveConfig();
+                                    player.sendMessage("§6" + args[3] + "\uc774 " + args[1] + "\uac8c\uc784\uc5d0 \ucc38\uc5ec\uc2dc \uac8c\uc784 \ubaa8\ub4dc\ub97c \ubc14\uafb8\ub294\uc9c0 \uc5ec\ubd80\uc5d0 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                    break;
+                                }
+                                player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> startGameMode <true|false>");
+                                break;
+                            }
+                            case "endGameMode": {
+                                if (args.length == 4) {
+                                    this.plugin.getConfig().set("miniGames." + args[1] + ".endGameMode", Boolean.parseBoolean(args[3]));
+                                    this.plugin.saveConfig();
+                                    player.sendMessage("§6" + args[3] + "\uc774 " + args[1] + "\uac8c\uc784\uc5d0 \ud1f4\uc7a5\uc2dc \uac8c\uc784 \ubaa8\ub4dc\ub97c \ubc14\uafb8\ub294\uc9c0 \uc5ec\ubd80\uc5d0 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                    break;
+                                }
+                                player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> endGameMode <true|false>");
+                                break;
+                            }
+                            case "addCmd": {
+                                if (args.length == 5) {
+                                    final List<String> cmdList2 = this.plugin.getConfig().getStringList("miniGames." + args[1] + "." + args[3] + "Cmd");
+                                    cmdList2.add(ChatColor.translateAlternateColorCodes('&', args[4].replace("{spc}", " ")));
+                                    this.plugin.getConfig().set("miniGames." + args[1] + "." + args[3] + "Cmd", cmdList2);
+                                    this.plugin.saveConfig();
+                                    player.sendMessage("§6\uba85\ub839\uc904\uc774 " + args[1] + " \uac8c\uc784\uc5d0 " + args[3] + "\uc5d0 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                    break;
+                                }
+                                player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> addCmd <start|join|quit|conStart|conEnd|winner> <\uba85\ub839\uc904>");
+                                player.sendMessage("§c\ucc38\uace0: <\uba85\ub839\uc904> \uc785\ub825\ub780\uc5d0\ub294 \uacf5\ubc31\uc744 {spc}\uc73c\ub85c \ub123\uc73c\uc138\uc694");
+                                break;
+                            }
+                            case "setCmd": {
+                                if (args.length >= 6) {
+                                    final StringBuilder stringBuilder2 = new StringBuilder(args[5]);
+                                    for (int j = 6; j < args.length; ++j) {
+                                        stringBuilder2.append(" ").append(args[j]);
+                                    }
+                                    final String message2 = stringBuilder2.toString();
+                                    final List<String> cmdList2 = this.plugin.getConfig().getStringList("miniGames." + args[1] + "." + args[3] );
+                                    int line = Integer.parseInt(args[4]);
+                                    this.plugin.getConfig().set("miniGames." + args[1] + "." + args[3] + "Cmd", cmdList2);
+                                    this.plugin.saveConfig();
+                                    List<String> commands = cmdList2;
+                                    if (commands == null) commands = new ArrayList<>();
+                                    if (message2.equals("none")) {
+                                        commands.remove(message2);
+                                    }
+                                    else {
+                                        if (commands.size() > line && commands.size() != 0) {
+                                            commands.set(line, message2);
+                                        } else {
+                                            commands.add(message2);
+                                        }
+                                    }
+
+                                    player.sendMessage("§6\uba85\ub839\uc904\uc774 " + args[1] + " \uac8c\uc784\uc5d0 " + args[3] + "\uc5d0 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                    break;
+                                } else if (args.length == 4) {
+                                    final List<String> cmdList2 = this.plugin.getConfig().getStringList("miniGames." + args[1] + "." + args[3]);
+                                    player.sendMessage("§f------------------------------------------------------");
+                                    for (int i = 0; i < cmdList2.size(); i++) {
+                                        player.sendMessage(i % 2 == 0 ? "§a" + cmdList2.get(i) : "§7" + cmdList2.get(i));
+                                    }
+                                    player.sendMessage("§f------------------------------------------------------");
+                                    this.plugin.saveConfig();
+                                    break;
+                                }
+                                player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> setCmd <customCmd>Cmd <cmdLine> <\uba85\ub839\uc904>");
+                                break;
+                            }
+                            case "msg": {
+                                if (args.length == 5) {
+                                    this.plugin.getConfig().set("miniGames." + args[1] + "." + args[3] + "Msg", ChatColor.translateAlternateColorCodes('&', args[4].replace("{spc}", " ")));
+                                    this.plugin.saveConfig();
+                                    player.sendMessage("§6\uba54\uc138\uc9c0\uac00 " + args[1] + " \uac8c\uc784\uc5d0 " + args[3] + "\uc5d0 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                    break;
+                                }
+                                player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> msg <join|quit|start|end|noWinnerEndMsg|redWinEnd|blueWinEnd|beZombie|extraDamage|dropItem|resistingDamage|startTimer|endTimer> <\uba54\uc138\uc9c0>");
+                                player.sendMessage("§c\ucc38\uace0: <\uba85\ub839\uc904> \uc785\ub825\ub780\uc5d0\ub294 \uacf5\ubc31\uc744 {spc}\uc73c\ub85c \ub123\uc73c\uc138\uc694");
+                                break;
+                            }
+                            case "loc": {
+                                if (args.length == 4) {
+                                    this.miniGames.getEditor(args[1]).setLocation(args[3] + "Location", playerLocation.getWorld().getName(), playerLocation.getX(), playerLocation.getY(), playerLocation.getZ(), playerLocation.getYaw(), playerLocation.getPitch());
+                                    player.sendMessage("§6\uc704\uce58\uac00 " + args[1] + " \ucee4\uc2a4\ud140 \uc704\uce58\uc5d0 \uc800\uc7a5 \ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                                    break;
+                                }
+                                player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> loc <customName>");
+                                break;
+                            }
+                            default: {
+                                player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> <wait|start|end|addDropItem|gameType|teamMode|maxHealth|worldBoarder|timePerPlayer|worldBoarder|scoreBoard|inv|needClearInv|startGameMode|endGameMode|addCmd|msg|loc> ...");
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                    player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg set <\uac8c\uc784\uc774\ub984> <wait|start|end|addBlock|addDropItem|gameType|teamMode|maxHealth|startGameMode|quitGameMode|timePerPlayer|worldBoarder|scoreBoard|addCmd|msg|loc> ...");
                     break;
-                case "list":
-                    player.sendMessage("§6게임 목록: " + plugin.getConfig().getStringList("gameList").toString());
+                }
+                case "list": {
+                    player.sendMessage("§6\uac8c\uc784 \ubaa9\ub85d: " + this.plugin.getConfig().getStringList("gameList").toString());
                     break;
-                case "reload":
+                }
+                case "reload": {
                     if (player.hasPermission("freedyminigamemaker.admin")) {
-                    plugin.reloadConfig();
-                    player.sendMessage("§a리로드가 완료되었습니다");
-                    } else player.sendMessage("§c권한이 없습니다.");
+                        this.plugin.reloadConfig();
+                        miniGames.getSettings().load();
+                        player.sendMessage("§a\ub9ac\ub85c\ub4dc\uac00 \uc644\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+                        break;
+                    }
+                    player.sendMessage("§c\uad8c\ud55c\uc774 \uc5c6\uc2b5\ub2c8\ub2e4.");
                     break;
-                default:
-                    player.sendMessage("§c사용법: /fmg <gui|join|quit|create|remove|set|list|reload> ...");
+                }
+                default: {
+                    if (!player.hasPermission("freedyminigamemaker.admin")) {
+                        player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg <join|quit|list> ...");
+
+                        break;
+                    }
+                    player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg <join|quit|create|remove|set|list|reload> ...");
                     break;
+                }
             }
-        } else player.sendMessage("§c사용법: /fmg <gui|join|quit|create|remove|set|list|reload> ...");
+        }
+        else {
+            player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fmg <join|quit|create|remove|set|list|reload> ...");
+        }
         return true;
     }
 }

@@ -1,67 +1,89 @@
+// 
+// Decompiled by Procyon v0.5.36
+// 
+
 package freedy.freedyminigamemaker;
 
+import freedy.freedyminigamemaker.commands.FreedyCommandSender;
 import org.apache.commons.lang.StringUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.WorldBorder;
+import org.bukkit.*;
 import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
-import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
+import org.bukkit.command.CommandException;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 
-import static org.bukkit.Bukkit.getServer;
-
 public class MiniGame extends DataStore {
-
     int taskId;
-    BukkitScheduler scheduler = getServer().getScheduler();
-    ConsoleCommandSender console = getServer().getConsoleSender();
-
-
+    public List<Integer> taskIdList;
+    public BukkitScheduler scheduler;
+    public FreedyCommandSender freedyCommandSender;
     public Map<String, String> customData;
     public List<BlockState> blockList;
-
     public List<Player> playerList;
-    public Map<String, List<Player>> teamPlayers;
     public List<PlayerData> playerDataList;
-
-    int playerAmount; //미니 게임 시작한 순간 참여 해있는 플레이어 수
-
+    int playerAmount;
     boolean isPlaying;
     boolean isWaiting;
-    int waitTime; //타이머
+    int waitTime;
     Map<String, Integer> repeaterTimeList;
 
-
-    public MiniGame(FreedyMinigameMaker plugin, String gameName) {
+    public MiniGame(final FreedyMinigameMaker plugin, final String gameName) {
         super(plugin, gameName);
+        taskIdList = new ArrayList<>();
+        this.scheduler = Bukkit.getServer().getScheduler();
+        this.freedyCommandSender = new FreedyCommandSender();
         super.plugin = plugin;
-        customData = new HashMap<>();
-        blockList = new ArrayList<>();
-        playerList = new ArrayList<>();
-        teamPlayers = new HashMap<>();
-        playerDataList = new ArrayList<>();
-        playerAmount = 0;
-        waitTime = 0;
-        repeaterTimeList = new HashMap<>();
-        isPlaying = false;
-        isWaiting = false;
+        this.customData = new HashMap<>();
+        this.blockList = new ArrayList<>();
+        this.playerList = new ArrayList<>();
+        this.playerDataList = new ArrayList<>();
+        this.playerAmount = 0;
+        this.waitTime = 0;
+        this.repeaterTimeList = new HashMap<>();
+        this.isPlaying = false;
+        this.isWaiting = false;
     }
 
-    public PlayerData getPlayerData(Player player) {
-        for (PlayerData pData : playerDataList) {
+    public String getFile(final String path) {
+        return MiniGames.fileStore.getConfig().getString(path);
+    }
+
+    public String getSettings(final String path) {
+        return MiniGames.settings.getConfig().getString(path);
+    }
+
+    public void setFile(final String path, final String value) {
+        MiniGames.fileStore.config.set(path, value);
+    }
+
+    public PlayerData getPlayerData(final Player player) {
+        for (final PlayerData pData : this.playerDataList) {
             if (pData.player.equals(player)) {
                 return pData;
             }
@@ -69,769 +91,1447 @@ public class MiniGame extends DataStore {
         return new PlayerData(player);
     }
 
-    public String getMode(Player player) {
-        if (getPlayerData(player).extraDamageMode) return getMessage("extraDamageMode");
-        else if (getPlayerData(player).dropItemMode) return getMessage("dropItemMode");
-        else if (getPlayerData(player).resistingDamageMode) return getMessage("resistingDamageMode");
-        else return getMessage("none");
-    }
-
-    public String getRealMode(Player player) {
-        if (getPlayerData(player).extraDamageMode) return "extraDamage";
-        else if (getPlayerData(player).dropItemMode) return "dropItem";
-        else if (getPlayerData(player).resistingDamageMode) return "resistingDamage";
-        else return "none";
-    }
-
-    public void addBlock(Block block) {
-        BlockState blockState = block.getState();
-        if (!blockList.contains(blockState)) {
-            for (BlockState bs : blockList) {
+    public void addBlock(final Block block) {
+        final BlockState blockState = block.getState();
+        if (!this.blockList.contains(blockState)) {
+            for (final BlockState bs : this.blockList) {
                 if (bs.getLocation().equals(blockState.getLocation())) {
                     return;
                 }
             }
-            blockList.add(blockState);
+            this.blockList.add(blockState);
+        }
+    }
+
+    public void addBlock(final BlockState blockState) {
+        if (!this.blockList.contains(blockState)) {
+            for (final BlockState bs : this.blockList) {
+                if (bs.getLocation().equals(blockState.getLocation())) {
+                    return;
+                }
+            }
+            this.blockList.add(blockState);
         }
     }
 
     public void resetBlocks() {
-        for (BlockState blockState : blockList) {
-            Block block = blockState.getLocation().getBlock();
+        for (final BlockState blockState : this.blockList) {
+            final Block block = blockState.getLocation().getBlock();
             if (!block.getState().equals(blockState)) {
                 block.setType(blockState.getType());
                 blockState.update();
             }
         }
-        blockList = new ArrayList<>();
+        this.blockList = new ArrayList<>();
     }
 
-    public void setCustomData(String key, String value) {
-        if (value.equals("none")) removeCustomData(key);
-        else this.customData.put(key, value);
+    public void setCustomData(final String key, final String value) {
+        if (value.equals("none")) {
+            this.removeCustomData(key);
+        } else {
+            this.customData.put(key, value);
+        }
     }
 
-    public void removeCustomData(String key) {
+    public void removeCustomData(final String key) {
         this.customData.remove(key);
     }
 
-    public String getCustomData(String key) {
-        if (customData.containsKey(key)) return this.customData.get(key);
-        else return "none";
+    public String getCustomData(final String key) {
+        if (this.customData.containsKey(key)) {
+            return this.customData.get(key);
+        }
+        return "none";
     }
 
-
-
     void stopChecker() {
-        //System.out.println("찰칵, 리피트 스케줄러 스탑 됨");
-        scheduler.cancelTask(taskId);
+        for (int taskId : this.taskIdList) {
+            this.scheduler.cancelTask(taskId);
+        }
+        taskIdList = new ArrayList<>();
+        this.scheduler.cancelTask(this.taskId);
     }
 
     void startChecker() {
-        taskId = scheduler.scheduleSyncRepeatingTask(plugin, this::checker, 0L, 20L);
+        //this.checker();
+        this.taskId = this.scheduler.scheduleSyncRepeatingTask(this.plugin, this::checker, 1L, 1L);
     }
 
     void checker() {
-
-
-        if (isPlaying) { //플레이 중 멈추는 걸 체크
-            int endTime = (getWaitForEndTime() * getTimePerPlayer());
-            if (waitTime >= endTime) {
-                waitTime = 0;
-                repeaterTimeList = new HashMap<>();
-                isPlaying = false;
-                stop();
-            } else {
-                //for (Player p : playerList) p.sendMessage(getMessage("endTimerMsg").replace("{time}", String.valueOf(endTime - waitTime)));
-                setScoreBoardAll(endTime - waitTime);
-
-                for (String repeatName : getRepeatList()) {
-                    int repeaterTimer = repeaterTimeList.get(repeatName) == null ? 0 : repeaterTimeList.get(repeatName);
-                    repeaterTimer++;
-                    repeaterTimeList.put(repeatName, repeaterTimer);
-                    if (getRepeatTimes(repeatName) == null ?
-                            repeaterTimer == getRepeatTime(repeatName) : getRepeatTimes(repeatName).contains(repeaterTimer)) {
-                        for (String cmd : getMessageList("repeats." + repeatName + ".cmd")) {
-                            if (cmd.contains("{allPlayer}")) {
-                                for (Player p : playerList) {
-                                    Bukkit.getServer().dispatchCommand(console,
-                                            replaceAll(cmd.replace("{leftTime}", String.valueOf(endTime - waitTime)), p));
-                                }
-                            } else Bukkit.getServer().dispatchCommand(console, replaceAll(cmd, null));
+        if (this.isPlaying) {
+                for (final String repeatName : this.getRepeatList()) {
+                    int repeaterTimer = (this.repeaterTimeList.get(repeatName) == null) ? 0 : this.repeaterTimeList.get(repeatName);
+                    ++repeaterTimer;
+                    this.repeaterTimeList.put(repeatName, repeaterTimer);
+                    if (this.getRepeatTimes(repeatName).isEmpty()) {
+                        if (repeaterTimer != this.getRepeatTime(repeatName)) {
+                            continue;
                         }
-                        repeaterTimeList.put(repeatName, 0);
-
+                    } else if (!this.getRepeatTimes(repeatName).contains(repeaterTimer)) {
+                        continue;
+                    }
+                    for (final String cmd : this.getMessageList("repeats." + repeatName + ".cmd")) {
+                        executeCommand(this.freedyCommandSender, cmd, playerList.get(0));
+                    }
+                    if (this.getRepeatTimes(repeatName).isEmpty()) {
+                        this.repeaterTimeList.put(repeatName, 0);
                     }
                 }
-                waitTime++;
+                ++this.waitTime;
 
+        } else if (this.playerList.size() >= this.getMaxStartPlayers()) {
+            this.isWaiting = true;
+            if (this.waitTime >= this.getWaitForStartTime() && 0 < this.getWaitForStartTime()) {
+                this.isWaiting = false;
+                this.isPlaying = true;
+                this.waitTime = 0;
+                this.repeaterTimeList = new HashMap<>();
+                this.start();
+            } else {
+                final String repeatName2 = "wait";
+                int repeaterTimer2 = (this.repeaterTimeList.get(repeatName2) == null) ? 0 : this.repeaterTimeList.get(repeatName2);
+                ++repeaterTimer2;
+                this.repeaterTimeList.put(repeatName2, repeaterTimer2);
+                Label_0786:
+                {
+                    if (this.getRepeatTimes(repeatName2).isEmpty()) {
+                        if (repeaterTimer2 != this.getRepeatTime(repeatName2)) {
+                            break Label_0786;
+                        }
+                    } else if (!this.getRepeatTimes(repeatName2).contains(repeaterTimer2)) {
+                        break Label_0786;
+                    }
+                    for (final String cmd2 : this.getMessageList("repeats." + repeatName2 + ".cmd")) {
+                        executeCommand(this.freedyCommandSender, cmd2, playerList.get(0));
+                    }
+                    if (this.getRepeatTimes(repeatName2).isEmpty()) {
+                        this.repeaterTimeList.put(repeatName2, 0);
+                    }
+                }
+                //this.setScoreBoardAll(this.getWaitForStartTime() - this.waitTime);
+                ++this.waitTime;
             }
-        } else { //대기 중 시작 하는 걸 체크
-            if (playerList.size() >= getMaxStartPlayers()) {
-                isWaiting = true;
-                if (waitTime >= getWaitForStartTime()) {
-                    isWaiting = false;
-                    isPlaying = true;
-                    waitTime = 0;
-                    repeaterTimeList = new HashMap<>();
-                    start();
+        }
+    }
+
+    public boolean hasEmptyInventory(final Player player) {
+        return Stream.of(player.getInventory().getContents()).noneMatch(Objects::nonNull) && Stream.of(player.getInventory().getArmorContents()).noneMatch(Objects::nonNull);
+    }
+
+    public boolean checkMove(final Player player) {
+        if (this.getGameList().contains(this.gameName)) {
+            if (!this.playerList.contains(player)) {
+                if (!this.getNeedClearInv() || this.hasEmptyInventory(player)) {
+                    if (this.playerList.size() < this.getMaxPlayers()) {
+                        if (!this.isPlaying) {
+                            return true;
+                        } else {
+                            player.sendMessage(getSettings("gameAlreadyStarted"));
+                        }
+                    } else {
+                        player.sendMessage(getSettings("maxPlayerToJoin"));
+                    }
                 } else {
-                    //for (Player p : playerList) p.sendMessage(getMessage("startTimerMsg").replace("{time}", String.valueOf(getWaitForStartTime() - waitTime)));
-                    setScoreBoardAll(getWaitForStartTime() - waitTime);
-                    waitTime++;
+                    player.sendMessage(getSettings("needClearInv"));
+                }
+            } else {
+                player.sendMessage(getSettings("alreadyPlaying"));
+            }
+        }
+        return false;
+    }
+
+    public boolean checkAdd(final Player player) {
+        if (!FreedyMinigameMaker.miniGames.isJoined(player)) {
+            if (this.getGameList().contains(this.gameName)) {
+                if (!this.playerList.contains(player)) {
+                    if (!this.getNeedClearInv() || this.hasEmptyInventory(player)) {
+                        if (this.playerList.size() < this.getMaxPlayers()) {
+                            if (!this.isPlaying) {
+                                return true;
+                            } else {
+                                player.sendMessage(getSettings("gameAlreadyStarted"));
+                            }
+                        } else {
+                            player.sendMessage(getSettings("maxPlayerToJoin"));
+                        }
+                    } else {
+                        player.sendMessage(getSettings("needClearInv"));
+                    }
+                } else {
+                    player.sendMessage(getSettings("alreadyPlaying"));
+                }
+            } else {
+                player.sendMessage(getSettings("noGameExist"));
+            }
+        }
+        return false;
+    }
+
+    public void add(final Player player) {
+        if (!checkAdd(player)) {
+            return;
+        }
+
+        for (final String cmd : this.getMessageList("preJoinCmd")) {
+            final String output = this.executeEventCommands(cmd, player);
+            if (output.equals("false")) {
+                return;
+            }
+        }
+        this.playerList.add(player);
+        this.playerDataList.add(new PlayerData(player));
+        if (this.getMessage("joinMsg") != null) {
+            for (final Player p : this.playerList) {
+                p.sendMessage(this.replaceAll(this.getMessage("joinMsg"), player));
+            }
+        }
+        if (this.getLocationIsExist("waitLocation")) {
+            player.teleport(this.getLocation("waitLocation"));
+        }
+        //this.setScoreBoardAll(0);
+        for (final String cmd : this.getMessageList("joinCmd")) {
+            Bukkit.getServer().dispatchCommand(this.freedyCommandSender, this.replaceAll(cmd, player));
+        }
+        if (!this.isWaiting && this.playerList.size() == this.getMaxStartPlayers()) {
+            this.startChecker();
+            if (this.getMessage("readyToStartMsg") != null) {
+                for (final Player p : this.playerList) {
+                    p.sendMessage(this.replaceAll(this.getMessage("readyToStartMsg"), player));
                 }
             }
+        }
+    }
+
+    public void removeAll() {
+        if (this.playerList.size() != 0) {
+            while(this.playerList.size() != 0) {
+                kick(this.playerList.get(0));
+
+            }
 
         }
-
-    }
-
-    public boolean hasEmptyInventory(Player player) {
-        return !(Stream.of(player.getInventory().getContents()).anyMatch(Objects::nonNull)
-                || Stream.of(player.getInventory().getArmorContents()).anyMatch(Objects::nonNull));
-    }
-
-    public void add(Player player) {
-        if (getGameList().contains(gameName)) {
-            if (!playerList.contains(player)) {
-                if (!getNeedClearInv() || hasEmptyInventory(player)) {
-                    if (playerList.size() < getMaxPlayers()) {
-                        if (!isPlaying) {
-
-                            playerList.add(player);
-                            playerDataList.add(new PlayerData(player));
-                            if (getMessage("joinMsg") != null)
-                                for (Player p : playerList)
-                                    p.sendMessage(replaceAll(getMessage("joinMsg"), player));
-                            if (getLocationIsExist("waitLocation")) player.teleport(getLocation("waitLocation"));
-                            setScoreBoardAll(0);
-                            for (String cmd : getMessageList("joinCmd")) {
-                                Bukkit.getServer().dispatchCommand(console, replaceAll(cmd, player));
-                            }
-                            if (!isWaiting && playerList.size() >= getMaxStartPlayers()) startChecker();
-
-                        } else player.sendMessage("§c" + "게임이 이미 시작되었습니다");
-                    } else player.sendMessage("§c" + "게임이 최대인원에 도달했습니다");
-                } else player.sendMessage("§c" + "그 게임에 참가하려면 인벤토리를 비워야 합니다");
-            } else player.sendMessage("§c" + "게임을 이미 플레이 중입니다");
-        } else player.sendMessage("§c" + "그 게임이 없습니다");
     }
 
 
-    public void removeAll(List<Player> playerList) {
-        for (Player p : playerList)
-            removeSituation(p);
-        this.playerList = new ArrayList<>();
-        this.playerDataList = new ArrayList<>();
-        this.teamPlayers.replaceAll((n, v) -> new ArrayList<>());
-    }
 
-    public void removeSituation(Player player) {
+    public void removeSituation(final Player player, boolean isKicked) {
 
-        removeScoreBoard(player);
-        if (getMessage("quitMsg") != null)
-            for (Player p : playerList)
-                p.sendMessage(replaceAll(getMessage("quitMsg"), player));
-        for (String cmd : getMessageList("quitCmd"))
-            Bukkit.getServer().dispatchCommand(console, replaceAll(cmd, player));
-        if (getLocationIsExist("endLocation")) player.teleport(getLocation("endLocation"));
-        player.getInventory().clear();
-        player.updateInventory();
-
-    }
-
-    public void remove(Player player) {
-
-        removeSituation(player);
-
-        playerList.remove(player);
-        playerDataList.remove(getPlayerData(player));
-
-        for (String teamName : this.teamPlayers.keySet()) {
-            List<Player> teamPlayers = this.teamPlayers.get(teamName);
-            teamPlayers.remove(player);
-            this.teamPlayers.put(teamName, teamPlayers);
+        //this.removeScoreBoard(player);
+        //player.getInventory().clear();
+        //player.updateInventory();
+        if (!isKicked && this.getMessage("quitMsg") != null) {
+            for (final Player p : this.playerList) {
+                p.sendMessage(this.replaceAll(this.getMessage("quitMsg"), player));
+            }
         }
-
+        this.executeCommands(this.freedyCommandSender, this.getMessageList("quitCmd"), player);
+        if (this.getLocationIsExist("endLocation")) {
+            player.teleport(this.getLocation("endLocation"));
+        }
     }
 
+    public void remove(final Player player) {
+        this.executeCommands(this.freedyCommandSender, this.getMessageList("preQuitCmd"), player);
 
+
+        this.removeSituation(player, false);
+        this.playerList.remove(player);
+        this.playerDataList.remove(this.getPlayerData(player));
+
+        final String defaultQuitGame = this.getSettings("defaultQuitGame");
+        if (defaultQuitGame != null && !(defaultQuitGame.equals("none"))) {
+            FreedyMinigameMaker.miniGames.get(defaultQuitGame).add(player);
+        }
+    }
+
+    public void kick(final Player player) {
+        this.executeCommands(this.freedyCommandSender, this.getMessageList("preQuitCmd"), player);
+
+
+        this.removeSituation(player, true);
+        this.playerList.remove(player);
+        this.playerDataList.remove(this.getPlayerData(player));
+
+    }
 
     public void disable() {
-
-
-        isPlaying = false;
-        isWaiting = false;
-        waitTime = 0;
-        repeaterTimeList = new HashMap<>();
-        playerAmount = 0;
-        customData = new HashMap<>();
-        blockList = new ArrayList<>();
-        playerList = new ArrayList<>();
-        playerDataList = new ArrayList<>();
-        teamPlayers.replaceAll((n, v) -> new ArrayList<>());
-
-        stopChecker();
+        this.isPlaying = false;
+        this.isWaiting = false;
+        this.waitTime = 0;
+        this.repeaterTimeList = new HashMap<>();
+        this.playerAmount = 0;
+        this.customData = new HashMap<>();
+        this.blockList = new ArrayList<>();
+        this.playerList = new ArrayList<>();
+        this.playerDataList = new ArrayList<>();
+        //this.teamPlayers.replaceAll((n, v) -> new ArrayList());
+        this.stopChecker();
+        FreedyMinigameMaker.miniGames.reset(gameName);
     }
 
     public boolean wasNothingToStop() {
-        //미니게임을 끝낼지 말지 고민 하는 메소드
-        /*
-
-        끝나야 하는 경우
-        2. 대기중인데 플레이어가 나갈 때
-        3. 플레이중에 나가서 한쪽 팀이 탕진될 때
-        4. 플레이 중에 나가서 한 명밖에 안 남았을 때
-
-        끝나지 말아야 하는 경우
-
-         */
-        if (playerList.size() == 0)
-            return false;
-        else if (isWaiting && playerList.size() < getMaxStartPlayers())
-            return false;
-        else if (getGameType().equalsIgnoreCase("zombieMode") && (teamPlayers.get("red").isEmpty() || teamPlayers.get("blue").isEmpty()))
-            return false;
-        else if (getTeamMode() && (teamPlayers.get("red").isEmpty() || teamPlayers.get("blue").isEmpty()))
-            return false;
-        else if (waitTime == 0)
-            return false;
-        else
-            return playerList.size() != 1;
+        if (this.isWaiting && this.playerList.size() < this.getMaxStartPlayers()) {
+            this.waitTime = 0;
+            this.repeaterTimeList = new HashMap<>();
+            for (final Player p : this.playerList) {
+                if (this.getMessage("morePlayerMsg") != null) p.sendMessage(this.getMessage("morePlayerMsg"));
+                //this.setScoreBoard(p, 0);
+            }
+            return true;
+        }
+        return !(this.playerList.size() == 0);
+                //(this.waitTime != 0 && this.playerList.size() >= this.getMaxStartPlayers());
     }
 
     public void stop() {
 
-        if (isWaiting && playerList.size() < getMaxStartPlayers()) {
-            waitTime = 0;
-            repeaterTimeList = new HashMap<>();
-            for (Player p : playerList){
-                p.sendMessage(getMessage("morePlayerMsg"));
-                setScoreBoard(p, 0);
-            }
-
+        final boolean cancelStop = this.wasNothingToStop();
+        if (cancelStop) {
             return;
-
         }
-
-        if (wasNothingToStop()) return;
-
-
-
-        /*
-        if (isWaiting && !isPlaying) {
-            isWaiting = false;
-            waitTime = 0;
-            repeaterTimer = 0;
-            for (Player p : playerList)
-                p.sendMessage(getMessage("waitPlayerMsg"));
-            return;
-        }*/
-
-        String showingEndMsg;
-        switch (getGameType()) {
-            case "zombieMode":
-                if (isPlaying && waitTime == 0) showingEndMsg = getMessage("noWinnerEndMsg").replace("{game}", gameName);
-                else if (teamPlayers.get("red").size() == 0) {
-                    showingEndMsg = getMessage("blueWinEndMsg").replace("{game}", gameName);
-
-                    for (Player player : teamPlayers.get("blue"))
-                        for (String cmd : getMessageList("winnerCmd"))
-                            Bukkit.getServer().dispatchCommand(console, replaceAll(cmd, player));
-
-
-                }
-                else if (teamPlayers.get("blue").size() == 0) {
-                    showingEndMsg = getMessage("redWinEndMsg").replace("{game}", gameName);
-                    for (Player player : teamPlayers.get("red"))
-                        for (String cmd : getMessageList("winnerCmd"))
-                            Bukkit.getServer().dispatchCommand(console, replaceAll(cmd, player));
-                }
-                else showingEndMsg = getMessage("noWinnerEndMsg").replace("{game}", gameName);
-                break;
-            default:
-                if (getTeamMode()) {
-                    if (isPlaying && waitTime == 0) showingEndMsg = getMessage("noWinnerEndMsg").replace("{game}", gameName);
-                    else if (teamPlayers.get("blue").size() == 0) {
-                        showingEndMsg = getMessage("redWinEndMsg").replace("{game}", gameName);
-                        for (Player player : teamPlayers.get("red"))
-                            for (String cmd : getMessageList("winnerCmd"))
-                                Bukkit.getServer().dispatchCommand(console, replaceAll(cmd, player));
-                    }
-                    else if (teamPlayers.get("red").size() == 0) {
-                        showingEndMsg = getMessage("blueWinEndMsg").replace("{game}", gameName);
-                        for (Player player : teamPlayers.get("blue"))
-                            for (String cmd : getMessageList("winnerCmd"))
-                                Bukkit.getServer().dispatchCommand(console, replaceAll(cmd, player));
-                    }
-
-                    else showingEndMsg = getMessage("noWinnerEndMsg").replace("{game}", gameName);
-                } else {
-                    if (isPlaying && waitTime == 0) showingEndMsg = getMessage("noWinnerEndMsg").replace("{game}", gameName);
-                    else if (playerList.size() == 1) {
-                        showingEndMsg = replaceAll(getMessage("endMsg"), null);
-                        for (String cmd : getMessageList("winnerCmd"))
-                            Bukkit.getServer().dispatchCommand(console, replaceAll(cmd, null));
-                    }
-                    else showingEndMsg = getMessage("noWinnerEndMsg").replace("{game}", gameName);
-
-                }
-                break;
-        }
-
-        for (Player p : playerList){
-            p.sendMessage(showingEndMsg);
-        }
-
-
-        removeAll(playerList);
-
-        executeCommands(getMessageList("conEndCmd"), null);
-        disable();
+        this.executeCommands(this.freedyCommandSender, this.getMessageList("preConEndCmd"), null);
+        this.removeAll();
+        this.executeCommands(this.freedyCommandSender, this.getMessageList("conEndCmd"), null);
+        this.disable();
     }
 
-    public void setScoreBoardAll(int time) {
-        if (getScoreBoardMode())
-            for (Player p : playerList)
-                setScoreBoard(p, time);
-    }
-
-    public void setScoreBoard(Player player, int time) {
-        Scoreboard board = Bukkit.getScoreboardManager().getNewScoreboard();
-        Objective obj = board.registerNewObjective(getMessage("scoreBoardTitle"), "dummy");
+    public void setBoard(Player player, String title) {
+        Scoreboard board = player.getScoreboard();
+        Objective obj = board.registerNewObjective(title, "dummy");
         obj.setDisplaySlot(DisplaySlot.SIDEBAR);
-        List<String> scoreBoard = getMessageList("scoreBoard");
-        Collections.reverse(scoreBoard);
-        for (int i = 0; i < scoreBoard.size(); i++) {
-            obj.getScore(replaceAll(scoreBoard.get(i), player)
-                    .replace("{displayTime}",
-                            isWaiting ?
-                                    getMessage("startTimerMsg").replace("{time}", String.valueOf(time))
-                                    : isPlaying ? getMessage("endTimerMsg").replace("{time}", String.valueOf(time))
-                                    : getMessage("morePlayerMsg"))
-
-            ).setScore(i);
-        }
         player.setScoreboard(board);
     }
 
-    public void removeScoreBoard(Player player) {
-        player.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
+    public void updateBoard(Player player, String title, String lineName, String line, String message) {
+        Scoreboard board = player.getScoreboard();
+        Objective obj = board.getObjective(title);
+        if (obj == null) {
+            obj = board.registerNewObjective(title, "dummy");
+            obj.setDisplaySlot(DisplaySlot.SIDEBAR);
+            player.setScoreboard(board);
+        }
+        Team team = board.getTeam(lineName);
+        if (team == null || obj.getScore(lineName) == null) {
+            obj.getScore(lineName).setScore(Integer.parseInt(line));
+            team = board.registerNewTeam(lineName);
+            team.addEntry(lineName);
+            player.setScoreboard(board);
+        }
+        if (message.equals("none")) {
+            team.removeEntry(lineName);
+            team.unregister();
+            player.setScoreboard(board);
+        } else {
+            team.setPrefix(message);
+        }
     }
 
     public void setWorldBoarder() {
-        if (getWorldBoarderMode()) {
-
-            WorldBorder worldBorder = getWorldBoarder();
-            Location worldBoarderLocation = getWorldBoarderLocation();
-
-
-            if (getSafeWorldBoarderFinderMode()) {
-                main : for (int x = 0; x < 1000; x++) {
-                    for (int z = 0; z < 1000; z++) {
-                        Biome biome = worldBoarderLocation.getWorld().getBiome(x, z);
-                        if (!(biome == Biome.OCEAN || biome == Biome.DEEP_OCEAN || biome == Biome.FROZEN_OCEAN)) {
-                            worldBoarderLocation.setX(x);
-                            worldBoarderLocation.setZ(z);
-                            worldBorder.setCenter(worldBoarderLocation);
-                            break main;
+        if (this.getWorldBoarderMode()) {
+            final WorldBorder worldBorder = this.getWorldBoarder();
+            final Location worldBoarderLocation = this.getWorldBoarderLocation();
+            Label_0127: {
+                if (this.getSafeWorldBoarderFinderMode()) {
+                    for (int x = 0; x < 1000; ++x) {
+                        for (int z = 0; z < 1000; ++z) {
+                            final Biome biome = worldBoarderLocation.getWorld().getBiome(x, z);
+                            if (biome != Biome.OCEAN && biome != Biome.DEEP_OCEAN && biome != Biome.FROZEN_OCEAN) {
+                                worldBoarderLocation.setX(x);
+                                worldBoarderLocation.setZ(z);
+                                worldBorder.setCenter(worldBoarderLocation);
+                                break Label_0127;
+                            }
                         }
                     }
                 }
-
-            } else worldBorder.setCenter(worldBoarderLocation);
-            worldBorder.setDamageAmount(getWorldBoarderOutDamage());
-            worldBorder.setSize(getWorldBoarderSizePerPlayer() * playerAmount);
-            worldBorder.setSize(getWorldBoarderMinSize(), getWorldBoarderSpeed());
-
+                else {
+                    worldBorder.setCenter(worldBoarderLocation);
+                }
+            }
+            worldBorder.setDamageAmount(this.getWorldBoarderOutDamage());
+            worldBorder.setSize(this.getWorldBoarderSizePerPlayer() * this.playerAmount);
+            worldBorder.setSize(this.getWorldBoarderMinSize(), this.getWorldBoarderSpeed());
         }
     }
 
     public void start() {
+        Collections.shuffle(this.playerList);
+        this.playerAmount = this.playerList.size();
+        this.setWorldBoarder();
+        this.executeCommands(this.freedyCommandSender, this.getMessageList("conStartCmd"), null);
+        for (final Player p2 : this.playerList) {
+            if (this.getMessage("startMsg") != null) p2.sendMessage(this.getMessage("startMsg").replace("{game}", this.gameName));
+            if (this.getLocationIsExist("startLocation")) p2.teleport(this.getLocation("startLocation"));
+        }
+    }
 
-        Collections.shuffle(playerList);
+    public void setBossBar(Player player, String barName, BarColor barColor, double progress, String message) {
 
-        playerAmount = playerList.size();
-        setWorldBoarder();
 
-        teamPlayers.put("red", new ArrayList<>());
-        teamPlayers.put("blue", new ArrayList<>());
-
-        executeCommands(getMessageList("conStartCmd"), null);
-
-        int i = 0;
-        switch (getGameType()) {
-            case "hideAndSeek":
-                for (Player p : playerList) {
-                    p.sendMessage(getMessage("startMsg").replace("{game}", gameName));
-                    /*for (String cmd : getMessageList("startCmd"))
-                        Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd
-                                .replace("{player}", p.getName())
-                                .replace("{game}", gameName));
-                     */
-                    if (getLocationIsExist("defaultStartLocation")) p.teleport(getLocation("defaultStartLocation"));
-                    i++;
-
+        for (PlayerData pData : this.playerDataList) {
+            if (pData.player.equals(player)) {
+                BossBar bossBar = pData.getBossBar(barName);
+                if (message.equals("none")) {
+                    if (bossBar != null) bossBar.removePlayer(player);
+                    return;
+                } else if (bossBar == null) {
+                    bossBar = Bukkit.createBossBar(message, barColor, BarStyle.SOLID);
                 }
-                //setBlockOnStart(playerNameList, gameName);
-                break;
-            case "zombieMode":
-                i = 0;
-                for (Player p : playerList) {
-                    p.sendMessage(getMessage("startMsg").replace("{game}", gameName));
-                    /*for (String cmd : getMessageList("startCmd"))
-                        Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd
-                                .replace("{player}", p.getName())
-                                .replace("{game}", gameName));
-                     */
-                    if (i == 0) {
-                        teamPlayers.get("red").add(p);
-                        if (getLocationIsExist("redStartLocation")) p.teleport(getLocation("redStartLocation"));
+                if (!bossBar.getColor().equals(barColor)) bossBar.setColor(barColor);
+                if (!bossBar.getTitle().equals(message)) bossBar.setTitle(message);
+                bossBar.setProgress(progress);
+                bossBar.setVisible(true);
+                pData.setBossBar(barName, bossBar);
+                bossBar.addPlayer(player);
+                return;
+            }
+        }
+
+    }
+
+
+
+
+    public void setGuiItemName(final Player player, final String invName, final int index, final String itemName) {
+
+        for (PlayerData pData : this.playerDataList) {
+            if (pData.player.equals(player)) {
+                Inventory inventory = pData.getInventory(invName);
+                if (inventory == null) {
+                    inventory = getInventory(invName);
+                }
+                ItemStack item = inventory.getItem(index);
+                ItemMeta itemMeta = item.getItemMeta();
+                itemMeta.setDisplayName(itemName);
+                item.setItemMeta(itemMeta);
+                inventory.setItem(index, item);
+                pData.setInventory(invName, inventory);
+                return;
+            }
+        }
+    }
+
+    public void setGuiItemLore(final Player player, final String invName, final int index, final int line, final String itemLore) {
+
+
+        
+        for (PlayerData pData : this.playerDataList) {
+            if (pData.player.equals(player)) {
+                Inventory inventory = pData.getInventory(invName);
+                if (inventory == null) {
+                    inventory = getInventory(invName);
+                }
+                ItemStack item = inventory.getItem(index);
+                List<String> lore = item.getItemMeta().getLore();
+                if (lore == null) lore = new ArrayList<>();
+                if (itemLore.equals("none")) {
+                    lore.remove(itemLore);
+                }
+                else {
+                    if (lore.size() > line && lore.size() != 0) {
+                        lore.set(line, itemLore);
                     } else {
-                        teamPlayers.get("blue").add(p);
-                        if (getLocationIsExist("blueStartLocation")) p.teleport(getLocation("blueStartLocation"));
+                        lore.add(itemLore);
                     }
-                    i++;
                 }
-                break;
-            default:
-                i = 0;
-                int j = 0;
-                if (getTeamMode()) {
-                    for (Player p : playerList) {
-                        p.sendMessage(getMessage("startMsg").replace("{game}", gameName));
-                        /*for (String cmd : getMessageList("startCmd"))
-                            Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd
-                                    .replace("{player}", p.getName())
-                                    .replace("{game}", gameName));
 
-                         */
-                        if (i % 2 == 0) {
-                            teamPlayers.get("red").add(p);
-                            if (getLocationIsExist("redStartLocation")) p.teleport(getLocationList("redStartLocation").get(i));
-                            i++;
-                        } else {
-                            teamPlayers.get("blue").add(p);
-                            if (getLocationIsExist("blueStartLocation")) p.teleport(getLocationList("blueStartLocation").get(j));
-                            j++;
-                        }
-                    }
-                } else {
-                    for (Player p : playerList) {
-                        p.sendMessage(getMessage("startMsg").replace("{game}", gameName));
-                        /*for (String cmd : getMessageList("startCmd"))
-                            Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), cmd
-                                    .replace("{player}", p.getName())
-                                    .replace("{game}", gameName));
-                         */
-                        if (getLocationIsExist("defaultStartLocation")) p.teleport(getLocationList("defaultStartLocation").get(i));
-                        i++;
-                    }
+                ItemMeta itemMeta = item.getItemMeta();
+                itemMeta.setLore(lore);
+                item.setItemMeta(itemMeta);
+                inventory.setItem(index, item);
+                pData.setInventory(invName, inventory);
+                return;
+            }
+        }
+    }
+
+    public void setGui(final Player player, final String invName, final int index, final String itemName) {
+
+        for (PlayerData pData : this.playerDataList) {
+            if (pData.player.equals(player)) {
+                Inventory inventory = pData.getInventory(invName);
+                if (inventory == null) {
+                    inventory = getInventory(invName);
                 }
-                break;
+                inventory.setItem(index, this.getItem(itemName));
+                pData.setInventory(invName, inventory);
+                return;
+            }
         }
 
 
     }
 
-    public void openInv(Player player, String invName) {
-        player.openInventory(getInventory(invName));
-    }
 
-    public boolean isExistingTitle(String title) {
-        return getInventoryTitleList().contains(title);
-    }
+    public void resetInventory(Player player) {
 
-    public String replaceCalc(String string) {
-
-
-        String area = StringUtils.substringBetween(string, "{calc(", ")}");
-        //System.out.println(area);
-
-        if (area == null) return string;
-
-        ScriptEngineManager mgr = new ScriptEngineManager();
-        ScriptEngine engine = mgr.getEngineByName("JavaScript");
-        try {
-            int result = (int) engine.eval(area);
-
-            //System.out.println(string + "의 결과는:" + result);
-
-            return string.replace("{calc("+ area + ")}", String.valueOf(result));
-        } catch (ScriptException e) {
-            e.printStackTrace();
+        for (PlayerData pData : this.playerDataList) {
+            if (pData.player.equals(player)) {
+                pData.resetInventory();
+                return;
+            }
         }
 
 
-
-        return "(에러,콘솔 확인 바람)";
-
     }
 
-    public String replaceShuffle(String string) {
-
-        String area = StringUtils.substringBetween(string, "{shuffle(", ")}");
-        if (area == null) return string;
-        List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
-        Collections.shuffle(stringList);
-        String result = stringList.toString().substring(1, stringList.toString().length() - 1);
-        return string.replace("{shuffle("+ area + ")}", result);
+    public void openGui(final Player player, final String invName) {
+        for (PlayerData pData : this.playerDataList) {
+            if (pData.player.equals(player)) {
+                Inventory inventory = pData.getInventory(invName);
+                if (inventory == null) {
+                    inventory = getInventory(invName);
+                }
+                player.openInventory(inventory);
+            }
+        }
     }
 
-    public String replacePlayerList(String string) {
 
-        String area = StringUtils.substringBetween(string, "{playerList(", ")}");
-        if (area == null) return string;
+    public void openInv(final Player player, final String invName) {
+        player.openInventory(this.getInventory(invName));
+    }
+
+    public void giveItem(final Player player, final String itemName) {
+        player.getInventory().addItem(this.getItem(itemName));
+        player.updateInventory();
+    }
+
+    public void giveItemHand(final Player player, final String itemName) {
+        player.getInventory().setItemInMainHand(this.getItem(itemName));
+        player.updateInventory();
+    }
+
+    public void giveItemCursor(final Player player, final String itemName, int cursor) {
+        player.getInventory().setItem(cursor, this.getItem(itemName));
+        player.updateInventory();
+    }
+
+    public void giveItemCursor(final Player player, final String itemName, int cursor, int amount) {
+        ItemStack itemStack = this.getItem(itemName);
+        itemStack.setAmount(amount);
+        player.getInventory().setItem(cursor, itemStack);
+        player.updateInventory();
+    }
+
+    public void setHelmet(final Player player, final String itemName) {
+        player.getInventory().setHelmet(this.getItem(itemName));
+        player.updateInventory();
+    }
+
+    public void setChestplate(final Player player, final String itemName) {
+        player.getInventory().setChestplate(this.getItem(itemName));
+        player.updateInventory();
+    }
+
+    public void setLeggings(final Player player, final String itemName) {
+        player.getInventory().setLeggings(this.getItem(itemName));
+        player.updateInventory();
+    }
+
+    public void setBoots(final Player player, final String itemName) {
+        player.getInventory().setBoots(this.getItem(itemName));
+        player.updateInventory();
+    }
+
+    public void applyKit(final Player player, final String kitName) {
+        final PlayerInventory inventory = player.getInventory();
+        for (int i = 0; i < inventory.getSize(); ++i) {
+            inventory.setItem(i, this.getItem(kitName, i));
+        }
+        player.updateInventory();
+    }
+
+    public boolean isExistingTitle(final String title) {
+        return this.getInventoryTitleList().contains(title);
+    }
+
+    public String getInvName(final String title) {
+        for (String invName : this.getInventoryList()) {
+            if (getInventoryTitle(invName).equals(title)) return invName;
+        }
+        return null;
+    }
+
+    public String replaceMath(final String string) {
+        String area = getSubFunc(string, "{math(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        final String data = stringList.get(0);
+        String result = "none";
+        Method method;
+        if (stringList.size() == 3) {
+            BigDecimal big1 = BigDecimal.valueOf(Double.parseDouble(stringList.get(1)));
+            BigDecimal big2 = BigDecimal.valueOf(Double.parseDouble(stringList.get(2)));
+
+            try {
+                method = BigDecimal.class.getMethod(data, BigDecimal.class);
+                try {
+                    result = String.valueOf(method.invoke(big1, big2));
+                } catch (IllegalArgumentException | IllegalAccessException | InvocationTargetException e) { e.printStackTrace(); }
+            } catch (SecurityException | NoSuchMethodException e) { e.printStackTrace(); }
+        }
+
+        return string.replace("{math(" + area + ")}", result);
+    }
+
+    public String replaceMiniGameData(final String string) {
+        String area = getSubFunc(string, "{miniGameData(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        final String data = stringList.get(0);
+        MiniGame miniGame = FreedyMinigameMaker.miniGames.get(data);
+        String result = "none";
+        switch (stringList.get(1)) {
+            case "isPlaying":
+                result = String.valueOf(miniGame.isPlaying);
+                break;
+            case "playerList":
+                List<String> pList = new ArrayList<>();
+                if (miniGame.playerList.size() != 0) {
+
+                    for (int i = 0; i < miniGame.playerList.size(); i++) {
+                        pList.add(miniGame.playerList.get(i).getName());
+                    }
+                    result = pList.toString().substring(1, pList.toString().length() - 1);
+                    break;
+                }
+
+        }
+
+        return string.replace("{miniGameData(" + area + ")}", result);
+    }
+
+    public String replaceTargetBlock(final String string, Player player) {
+        String area = getSubFunc(string, "{playerTargetBlock(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        final int data = Integer.parseInt(stringList.get(0));
+        Block block = player.getTargetBlock(null, data);
         String result;
+        if (block != null) {
+            Location loc = block.getLocation();
+            result = loc.getWorld().getName() + ", " + loc.getX() + ", " + loc.getY() + ", " + loc.getZ();
+        }
+        else result = "none";
+
+
+        return string.replace("{playerTargetBlock(" + area + ")}", result);
+    }
+
+    public String replaceColor(final String string) {
+        String area = getSubFunc(string, "{color(");
+        if (area == null) {
+            return string;
+        }
+        String result = ChatColor.translateAlternateColorCodes('&', area);
+
+        return string.replace("{color(" + area + ")}", result);
+    }
+
+    public String replaceNumeric(final String string) {
+        String area = getSubFunc(string, "{numeric(");
+        if (area == null) {
+            return string;
+        }
+        String result;
+        try {
+            Double.parseDouble(area);
+            result = "true";
+        } catch(NumberFormatException e) {
+            result = "false";
+        }
+        return string.replace("{numeric(" + area + ")}", result);
+    }
+
+    public String replaceContain(final String string) {
+        String area = getSubFunc(string, "{contain(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        final String data = stringList.get(0);
+        stringList.remove(0);
+        if (stringList.get(0).equals("none")) {
+            stringList.remove(0);
+        }
+        String result = "false";
+        if (stringList.contains(data)) {
+            result = "true";
+        }
+        return string.replace("{contain(" + area + ")}", result);
+    }
+
+    public String replaceSub(final String string) {
+        String area = getSubFunc(string, "{sub(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        final int open = Integer.parseInt(stringList.get(0));
+        final int close = Integer.parseInt(stringList.get(1));
+        stringList.remove(0);
+        stringList.remove(0);
+
+        String result = stringList.toString().substring(1, stringList.toString().length() - 1);
+        return string.replace("{sub(" + area + ")}", result.substring(open, close));
+
+    }
+
+    public String replaceTopLoc(final String string) {
+        String area = getSubFunc(string, "{topLoc(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+
+
+        World world = Bukkit.getWorld(stringList.get(0));
+        int x = Integer.parseInt(stringList.get(1));
+        int z = Integer.parseInt(stringList.get(3));
+        int y = world.getHighestBlockYAt(x, z);
+        String result = world.getName() + ", " + x + ", " + y + ", " + z;
+        return string.replace("{topLoc(" + area + ")}", result);
+    }
+
+    public String replaceEntityLoc(final String string) {
+        String area = getSubFunc(string, "{entityLoc(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+
+        Entity entity = Bukkit.getEntity(UUID.fromString(stringList.get(0)));
+        World world = entity.getWorld();
+        double x = entity.getLocation().getX();
+        double y = entity.getLocation().getY();
+        double z = entity.getLocation().getZ();
+        String result = world.getName() + ", " + x + ", " + y + ", " + z;
+        return string.replace("{entityLoc(" + area + ")}", result);
+    }
+
+    public String replaceBlockName(final String string) {
+        String area = getSubFunc(string, "{blockName(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+
+
+        World world = Bukkit.getWorld(stringList.get(0));
+        double x = Double.parseDouble(stringList.get(1));
+        double y = Double.parseDouble(stringList.get(2));
+        double z = Double.parseDouble(stringList.get(3));
+        Location location = new Location(world, x, y, z);
+        BlockState blockState = location.getBlock().getState();
+        blockState.getData();
+        String result = blockState.getTypeId() + ":" + String.valueOf(blockState.getData().toItemStack(1).getDurability());
+        return string.replace("{blockName(" + area + ")}", result);
+    }
+
+    public String replaceInteger(final String string) {
+        String area = getSubFunc(string, "{integer(");
+        if (area == null) {
+            return string;
+        }
+        final String result = String.valueOf(BigDecimal.valueOf(Double.parseDouble(area)).intValue());
+        return string.replace("{integer(" + area + ")}", result);
+    }
+
+    public String replaceCalc(final String string) {
+        String area = getSubFunc(string, "{calc(");
+        if (area == null) {
+            return string;
+        }
+        final ScriptEngineManager mgr = new ScriptEngineManager();
+        final ScriptEngine engine = mgr.getEngineByName("JavaScript");
+        try {
+            final Object subResult = engine.eval(area);
+            String result;
+            if (subResult instanceof Integer) {
+                result = ((Integer)subResult).toString();
+            }
+            else {
+                result = subResult.toString();
+            }
+            return string.replace("{calc(" + area + ")}", String.valueOf(result));
+        }
+        catch (ScriptException e) {
+            e.printStackTrace();
+            return "(\uc5d0\ub7ec,\ucf58\uc194 \ud655\uc778 \ubc14\ub78c)";
+        }
+    }
+
+    public String replaceRound(final String string) {
+        String area = getSubFunc(string, "{round(");
+        if (area == null) {
+            return string;
+        }
+        final String result = String.valueOf(Math.round(Double.parseDouble(area)));
+        return string.replace("{round(" + area + ")}", result);
+    }
+
+    public String replaceAbs(final String string) {
+        String area = getSubFunc(string, "{abs(");
+        if (area == null) {
+            return string;
+        }
+        final String result = String.valueOf(Math.abs(Double.parseDouble(area)));
+        return string.replace("{abs(" + area + ")}", result);
+    }
+
+    public String replaceCos(final String string) {
+        String area = getSubFunc(string, "{cos(");
+        if (area == null) {
+            return string;
+        }
+        final String result = String.valueOf(Math.cos(Double.parseDouble(area)));
+        return string.replace("{cos(" + area + ")}", result);
+    }
+
+    public String replaceSin(final String string) {
+        String area = getSubFunc(string, "{sin(");
+        if (area == null) {
+            return string;
+        }
+        final String result = String.valueOf(Math.sin(Double.parseDouble(area)));
+        return string.replace("{sin(" + area + ")}", result);
+    }
+
+    public String replaceTan(final String string) {
+        String area = getSubFunc(string, "{tan(");
+        if (area == null) {
+            return string;
+        }
+        final String result = String.valueOf(Math.sin(Double.parseDouble(area)));
+        return string.replace("{tan(" + area + ")}", result);
+    }
+
+    public String replaceRoundUp(final String string) {
+        String area = getSubFunc(string, "{roundUp(");
+        if (area == null) {
+            return string;
+        }
+        final String result = String.valueOf(Math.ceil(Double.parseDouble(area)));
+        return string.replace("{roundUp(" + area + ")}", result);
+    }
+
+    public String replaceRoundDown(final String string) {
+        String area = getSubFunc(string, "{roundDown(");
+        if (area == null) {
+            return string;
+        }
+        final String result = String.valueOf(Math.floor(Double.parseDouble(area)));
+        return string.replace("{roundDown(" + area + ")}", result);
+    }
+
+    public String replaceReplace(final String string) {
+        String area = getSubFunc(string, "{replace(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        final String oldChar = stringList.get(0);
+        stringList.remove(0);
+        String newChar = stringList.get(0);
+        stringList.remove(0);
+        if (newChar.equals("none")) {
+            newChar = "";
+        }
+        for (int i = 0; i < stringList.size(); ++i) {
+            if (stringList.get(i).equals(oldChar)) {
+                stringList.set(i, newChar);
+            }
+        }
+        final String result = stringList.toString().substring(1, stringList.toString().length() - 1);
+        return string.replace("{replace(" + area + ")}", result);
+    }
+
+    public String replaceShuffle(final String string) {
+        String area = getSubFunc(string, "{shuffle(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        Collections.shuffle(stringList);
+        final String result = stringList.toString().substring(1, stringList.toString().length() - 1);
+        return string.replace("{shuffle(" + area + ")}", result);
+    }
+
+    public String replacePlayerList(final String string) {
+        String area = getSubFunc(string, "{playerList(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> playerNameList = new ArrayList<>();
         switch (area) {
-            case "blue":
-                result = teamPlayers.get("blue").toString().substring(1, teamPlayers.get("blue").toString().length() - 1);
+            case "default":
+                for (final Player p : this.playerList) {
+                    playerNameList.add(p.getName());
+                }
                 break;
-            case "red":
-                result = teamPlayers.get("red").toString().substring(1, teamPlayers.get("blue").toString().length() - 1);
+            case "all":
+                for (final Player p : Bukkit.getOnlinePlayers()) {
+                    playerNameList.add(p.getName());
+                }
                 break;
             default:
-                result = playerList.toString().substring(1, playerList.toString().length() - 1);
+                for (final Player p : this.playerList) {
+                    if (getPlayerData(p).getCustomData(area).equals("true"))playerNameList.add(p.getName());
+                }
+                break;
+
+
         }
-        return string.replace("{playerList("+ area + ")}", result);
+
+        final String result = playerNameList.toString().substring(1, playerNameList.toString().length() - 1);
+        return string.replace("{playerList(" + area + ")}", result);
     }
 
-    public String replaceRandom(String string) {
-
-        String area = StringUtils.substringBetween(string, "{random(", ")}");
-        if (area == null) return string;
-        List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
-        String result = stringList.get(ThreadLocalRandom.current().nextInt(1, stringList.size()));
-        return string.replace("{random("+ area + ")}", result);
+    public String replaceRandom(final String string) {
+        String area = getSubFunc(string, "{random(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        final String result = stringList.get(ThreadLocalRandom.current().nextInt(0, stringList.size()));
+        return string.replace("{random(" + area + ")}", result);
     }
 
-    public String replaceIndexOf(String string) {
+    public String replaceHighList(final String string) {
+        String area = getSubFunc(string, "{highList(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        Collections.sort(stringList);
+        final String result = stringList.toString().substring(1, stringList.toString().length() - 1);
+        return string.replace("{highList(" + area + ")}", result);
+    }
 
-        String area = StringUtils.substringBetween(string, "{indexOf(", ")}");
-        if (area == null) return string;
-        List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
-        int index = Integer.parseInt(stringList.get(0));
+    public String replaceFlip(final String string) {
+        String area = getSubFunc(string, "{flip(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        Collections.reverse(stringList);
+        final String result = stringList.toString().substring(1, stringList.toString().length() - 1);
+        return string.replace("{flip(" + area + ")}", result);
+    }
+
+    public String replaceLength(final String string) {
+        String area = getSubFunc(string, "{length(");
+        if (area == null) {
+            return string;
+        }
+        final String result = String.valueOf(area.length());
+        return string.replace("{length(" + area + ")}", result);
+    }
+
+    public String replaceIndexOf(final String string) {
+        String area = getSubFunc(string, "{indexOf(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        final int index = Integer.parseInt(stringList.get(0));
         stringList.remove(0);
-        String result = stringList.get(index);
-        return string.replace("{indexOf("+ area + ")}", result);
+        final String result = stringList.get(index);
+        return string.replace("{indexOf(" + area + ")}", result);
     }
 
-    public String replaceHighestNumber(String string) {
+    public String replaceValueOf(final String string) {
+        String area = getSubFunc(string, "{valueOf(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        final String value = stringList.get(0);
+        stringList.remove(0);
+        final int index = stringList.indexOf(value);
+        return string.replace("{valueOf(" + area + ")}", String.valueOf(index));
+    }
 
-        String area = StringUtils.substringBetween(string, "{highestNumber(", ")}");
-        if (area == null) return string;
-        List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
-        List<Integer> integerList = new ArrayList<>();
-        for (String s : stringList) {
+    public String replaceSizeOf(final String string) {
+        String area = getSubFunc(string, "{sizeOf(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        final int size = stringList.size();
+        return string.replace("{sizeOf(" + area + ")}", String.valueOf(size));
+    }
+
+    public String replaceHighestNumber(final String string) {
+        String area = getSubFunc(string, "{highestNumber(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        final List<Integer> integerList = new ArrayList<>();
+        for (final String s : stringList) {
             integerList.add(Integer.parseInt(s));
         }
-        Integer result = Collections.max(integerList);
-        return string.replace("{highestNumber("+ area + ")}", String.valueOf(result));
+        final Integer result = Collections.max((Collection<? extends Integer>)integerList);
+        return string.replace("{highestNumber(" + area + ")}", String.valueOf(result));
     }
 
-    public String replaceLowestNumber(String string) {
-
-        String area = StringUtils.substringBetween(string, "{lowestNumber(", ")}");
-        if (area == null) return string;
-        List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
-        List<Integer> integerList = new ArrayList<>();
-        for (String s : stringList) {
+    public String replaceLowestNumber(final String string) {
+        String area = getSubFunc(string, "{lowestNumber(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        final List<Integer> integerList = new ArrayList<>();
+        for (final String s : stringList) {
             integerList.add(Integer.parseInt(s));
         }
-        Integer result = Collections.min(integerList);
-        return string.replace("{lowestNumber("+ area + ")}", String.valueOf(result));
+        final Integer result = Collections.min((Collection<? extends Integer>)integerList);
+        return string.replace("{lowestNumber(" + area + ")}", String.valueOf(result));
     }
 
-    public String replaceRandomNumber(String string) {
-
-
-        String area = StringUtils.substringBetween(string, "{randomNumber(", ")}");
-        //System.out.println(area);
-
-        if (area == null) return string;
-
-        List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
-
+    public String replaceRandomNumber(final String string) {
+        String area = getSubFunc(string, "{randomNumber(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
         int result;
-
         if (stringList.size() == 1) {
             result = ThreadLocalRandom.current().nextInt(0, Integer.parseInt(stringList.get(0) + 1));
-
-        } else if (stringList.size() == 2) {
-            result = ThreadLocalRandom.current().nextInt(Integer.parseInt(stringList.get(0)), Integer.parseInt(stringList.get(1) + 1));
-
-        } else return string;
-
-        return string.replace("{randomNumber("+ area + ")}", String.valueOf(result));
-
-
-    }
-
-    public String replaceData(String string) {
-
-
-        String area = StringUtils.substringBetween(string, "{data(", ")}");
-
-        if (area == null) return string;
-
-        String result = getCustomData(area);
-
-        if (result == null) result = "none";
-
-        return string.replace("{data(" + area + ")}", result);
-
-
-    }
-
-    public String replaceConstant(String string) {
-
-
-        String area = StringUtils.substringBetween(string, "{constant(", ")}");
-
-        if (area == null) return string;
-
-        String result = getMessage(area);
-        if (result == null) result = "none";
-
-        return string.replace("{constant("+ area + ")}", result);
-
-
-    }
-
-    public String replaceGameData(String string) {
-        return string
-                .replace("{maxPlayers}", String.valueOf(getMaxStartPlayers()))
-                .replace("{randomPlayer}", playerList.size() == 1 ?
-                        playerList.get(0).getName() :
-                        playerList.isEmpty() ?
-                                "none" :
-                                playerList.get(ThreadLocalRandom.current().nextInt(0, playerList.size() - 1)).getName())
-                .replace("{playerAmount}", String.valueOf(playerList.size()))
-                .replace("{playerSize}", String.valueOf(playerList.size()))
-                .replace("{isPlaying}", String.valueOf(isPlaying))
-                .replace("{isWaiting}", String.valueOf(isWaiting))
-                .replace("{game}", gameName)
-                .replace("{gameType}", getGameType())
-                .replace("{gameName}", gameName);
-    }
-
-    public String replaceCalcAll(String string, Player player) {
-        String[] strings = StringUtils.substringsBetween(string, "{", "(");
-        if (strings == null) return string;
-        List<String> areas = Arrays.asList(strings);
-        Collections.reverse(areas);
-        for (String area : areas) {
-            switch (area) {
-                case "playerList":
-                    string = replacePlayerList(string);
-                    break;
-                case "indexOf":
-                    string = replaceIndexOf(string);
-                    break;
-                case "shuffle":
-                    string = replaceShuffle(string);
-                    break;
-                case "randomNumber":
-                    string = replaceRandomNumber(string);
-                    break;
-                case "random":
-                    string = replaceRandom(string);
-                    break;
-                case "constant":
-                    string = replaceConstant(string);
-                    break;
-                case "data":
-                    string = replaceData(string);
-                    break;
-                case "playerData":
-                    if (player != null)
-                        string = getPlayerData(player).replaceData(string);
-                    break;
-                case "highestNumber":
-                    string = replaceHighestNumber(string);
-                    break;
-                case "lowestNumber":
-                    string = replaceLowestNumber(string);
-                    break;
-                case "calc":
-                    string = replaceCalc(string);
-                    break;
-                default:
-
-
+        }
+        else {
+            if (stringList.size() != 2) {
+                return string;
             }
+            result = ThreadLocalRandom.current().nextInt(Integer.parseInt(stringList.get(0)), Integer.parseInt(stringList.get(1)) + 1);
+        }
+        return string.replace("{randomNumber(" + area + ")}", String.valueOf(result));
+    }
 
+    public String replaceData(final String string) {
+        String area = getSubFunc(string, "{data(");
 
+        String result = this.getCustomData(area);
+        if (result == null) {
+            result = "none";
+        }
+        return string.replace("{data(" + area + ")}", result);
+    }
 
+    public String replaceRemove(final String string) {
+        String area = getSubFunc(string, "{remove(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        final String removing = stringList.get(0);
+        stringList.remove(0);
+        stringList.remove(removing);
+        final String result = stringList.toString().substring(1, stringList.toString().length() - 1);
+        return string.replace("{remove(" + area + ")}", result);
+    }
 
+    public String replaceAdd(final String string) {
+        String area = getSubFunc(string, "{add(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        final String adding = stringList.get(0);
+        stringList.remove(0);
+        if (stringList.get(0).equals("none")) {
+            stringList.remove(0);
+        }
+        stringList.add(adding);
+        final String result = stringList.toString().substring(1, stringList.toString().length() - 1);
+        return string.replace("{add(" + area + ")}", result);
+    }
+
+    public String replaceFile(final String string) {
+        String area = getSubFunc(string, "{file(");
+        if (area == null) {
+            return string;
+        }
+        String result = this.getFile(area);
+        if (result == null) {
+            result = "none";
+        }
+        return string.replace("{file(" + area + ")}", result);
+    }
+
+    public String replaceConstant(final String string) {
+        String area = getSubFunc(string, "{constant(");
+        if (area == null) {
+            return string;
+        }
+        String result = this.getMessage(area);
+        if (result == null) {
+            result = "none";
+        }
+        return string.replace("{constant(" + area + ")}", result);
+    }
+
+    public String replaceDate(final String string) {
+        String area = getSubFunc(string, "{date(");
+        if (area == null) {
+            return string;
+        }
+        final DateFormat dateFormat = new SimpleDateFormat(area);
+        final Calendar cal = Calendar.getInstance();
+        final String result = dateFormat.format(cal.getTime());
+        return string.replace("{date(" + area + ")}", result);
+    }
+
+    public String replaceGameData(final String string) {
+        return string
+                .replace("{maxPlayers}", String.valueOf(this.getMaxStartPlayers()))
+                .replace("{randomPlayer}", (this.playerList.size() == 1) ? this.playerList.get(0).getName() : (this.playerList.isEmpty() ? "none" : this.playerList.get(ThreadLocalRandom.current().nextInt(0, this.playerList.size() - 1)).getName()))
+                .replace("{playerAmount}", String.valueOf(this.playerList.size()))
+                .replace("{playerSize}", String.valueOf(this.playerList.size()))
+                .replace("{isPlaying}", String.valueOf(this.isPlaying))
+                .replace("{isWaiting}", String.valueOf(this.isWaiting))
+                .replace("{game}", this.gameName)
+                .replace("{gameType}", (this.getGameType() == null) ? "none" : this.getGameType())
+                .replace("{gameName}", this.gameName);
+    }
+    
+    public static String getSubFunc(String string, String func) {
+        int index = StringUtils.lastIndexOfIgnoreCase(string, func);
+        if (index == -1) return null;
+        String sum = string.substring(index);
+        int lastIndex = sum.indexOf(")}");
+        if (lastIndex == -1) return null;
+        return sum.substring(func.length(), lastIndex);
+    }
+
+    public String replaceCalcAll(String string, final Player player) {
+        final String[] strings = StringUtils.substringsBetween(string, "{", "(");
+        if (strings == null) {
+            return string;
+        }
+        final List<String> areas = Arrays.asList(strings);
+        Collections.reverse(areas);
+        for (final String s : areas) {
+            switch (s) {
+                case "math": {
+                    string = this.replaceMath(string);
+                    continue;
+                }
+                case "miniGameData": {
+                    string = this.replaceMiniGameData(string);
+                    continue;
+                }
+                case "color": {
+                    string = this.replaceColor(string);
+                    continue;
+                }
+                case "numeric": {
+                    string = this.replaceNumeric(string);
+                    continue;
+                }
+                case "entityLoc": {
+                    string = this.replaceEntityLoc(string);
+                    continue;
+                }
+                case "topLoc": {
+                    string = this.replaceTopLoc(string);
+                    continue;
+                }
+                case "contain": {
+                    string = this.replaceContain(string);
+                    continue;
+                }
+                case "sub": {
+                    string = this.replaceSub(string);
+                    continue;
+                }
+                case "blockName": {
+                    string = this.replaceBlockName(string);
+                    continue;
+                }
+                case "playerList": {
+                    string = this.replacePlayerList(string);
+                    continue;
+                }
+                case "add": {
+                    string = this.replaceAdd(string);
+                    continue;
+                }
+                case "remove": {
+                    string = this.replaceRemove(string);
+                    continue;
+                }
+                case "file": {
+                    string = this.replaceFile(string);
+                    continue;
+                }
+                case "date": {
+                    string = this.replaceDate(string);
+                    continue;
+                }
+                case "length": {
+                    string = this.replaceLength(string);
+                    continue;
+                }
+                case "indexOf": {
+                    string = this.replaceIndexOf(string);
+                    continue;
+                }
+                case "valueOf": {
+                    string = this.replaceValueOf(string);
+                    continue;
+                }
+                case "sizeOf": {
+                    string = this.replaceSizeOf(string);
+                    continue;
+                }
+                case "shuffle": {
+                    string = this.replaceShuffle(string);
+                    continue;
+                }
+                case "highList": {
+                    string = this.replaceHighList(string);
+                    continue;
+                }
+                case "flip": {
+                    string = this.replaceFlip(string);
+                    continue;
+                }
+                case "randomNumber": {
+                    string = this.replaceRandomNumber(string);
+                    continue;
+                }
+                case "random": {
+                    string = this.replaceRandom(string);
+                    continue;
+                }
+                case "constant": {
+                    string = this.replaceConstant(string);
+                    continue;
+                }
+                case "data": {
+                    string = this.replaceData(string);
+                    continue;
+                }
+                case "playerData": {
+                    if (player != null) {
+                        string = getPlayerData(player).replaceData(string);
+                        continue;
+                    }
+                    continue;
+                }
+                case "playerTargetBlock": {
+                    if (player != null) {
+                        string = this.replaceTargetBlock(string, player);
+                        continue;
+                    }
+                    continue;
+                }
+                case "replace": {
+                    string = this.replaceReplace(string);
+                    continue;
+                }
+                case "highestNumber": {
+                    string = this.replaceHighestNumber(string);
+                    continue;
+                }
+                case "lowestNumber": {
+                    string = this.replaceLowestNumber(string);
+                    continue;
+                }
+                case "integer": {
+                    string = this.replaceInteger(string);
+                    continue;
+                }
+                case "abs": {
+                    string = this.replaceAbs(string);
+                    continue;
+                }
+                case "cos": {
+                    string = this.replaceCos(string);
+                    continue;
+                }
+                case "sin": {
+                    string = this.replaceSin(string);
+                    continue;
+                }
+                case "tan": {
+                    string = this.replaceTan(string);
+                    continue;
+                }
+                case "round": {
+                    string = this.replaceRound(string);
+                    continue;
+                }
+                case "roundUp": {
+                    string = this.replaceRoundUp(string);
+                    continue;
+                }
+                case "roundDown": {
+                    string = this.replaceRoundDown(string);
+                    continue;
+                }
+                case "calc": {
+                    string = this.replaceCalc(string);
+                    break;
+                }
+            }
         }
         return string;
     }
 
-    public String replacePlayerData(String string, Player player) {
+    public String replacePlayerData(String string, final Player player) {
         if (player != null) {
             string = string
+                    .replace("{playerIsOp}", String.valueOf(player.isOp()))
+                    .replace("{playerUuid}", player.getUniqueId().toString())
+                    .replace("{x}", String.valueOf(player.getLocation().getX()))
+                    .replace("{y}", String.valueOf(player.getLocation().getY()))
+                    .replace("{z}", String.valueOf(player.getLocation().getZ()))
+                    .replace("{eyeX}", String.valueOf(player.getEyeLocation().getX()))
+                    .replace("{eyeY}", String.valueOf(player.getEyeLocation().getY()))
+                    .replace("{eyeZ}", String.valueOf(player.getEyeLocation().getZ()))
+                    .replace("{yaw}", String.valueOf(player.getLocation().getYaw()))
+                    .replace("{pitch}", String.valueOf(player.getLocation().getPitch()))
+                    .replace("{world}", player.getLocation().getWorld().getName())
                     .replace("{allPlayer}", player.getName())
+                    .replace("{onlinePlayer}", player.getName())
                     .replace("{playerName}", player.getName())
-                    .replace("{playerIndex}", String.valueOf(playerList.indexOf(player)))
-                    .replace("{player}", player.getName());
-            if (string.contains("{playerMode}")) string = string.replace("{playerMode}", getMode(player));
-            if (string.contains("{realPlayerMode}")) string = string.replace("{realPlayerMode}", getRealMode(player));
-        } else {
-            if (playerList.isEmpty()) {
-                string = string
-                        .replace("{allPlayer}", "none")
-                        .replace("{playerName}", "none")
-                        .replace("{playerIndex}", "none")
-                        .replace("{player}", "none");
-                if (string.contains("{playerMode}"))
-                    string = string.replace("{playerMode}", "none");
-                if (string.contains("{realPlayerMode}"))
-                    string = string.replace("{realPlayerMode}", "none");
-            } else {
-                string = string
-                        .replace("{allPlayer}", playerList.get(0).getName())
-                        .replace("{playerName}", playerList.get(0).getName())
-                        .replace("{playerIndex}", "0")
-                        .replace("{player}", playerList.get(0).getName());
-                if (string.contains("{playerMode}"))
-                    string = string.replace("{playerMode}", getMode(playerList.get(0)));
-                if (string.contains("{realPlayerMode}"))
-                    string = string.replace("{realPlayerMode}", getRealMode(playerList.get(0)));
+                    .replace("{playerItemSlot}", String.valueOf(player.getInventory().getHeldItemSlot()))
+                    .replace("{playerIndex}", String.valueOf(this.playerList.indexOf(player)))
+                    .replace("{playerHealth}", String.valueOf(player.getHealth()))
+                    .replace("{playerFood}", String.valueOf(player.getFoodLevel()))
+                    .replace("{player}", player.getName())
+                    .replace("{playerExp}", String.valueOf(player.getTotalExperience()));
+        }
+        else if (this.playerList.isEmpty()) {
+            string = string.replace("{allPlayer}", "none").replace("{playerName}", "none").replace("{playerIndex}", "none").replace("{player}", "none");
+            if (string.contains("{playerMode}")) {
+                string = string.replace("{playerMode}", "none");
+            }
+            if (string.contains("{realPlayerMode}")) {
+                string = string.replace("{realPlayerMode}", "none");
             }
         }
-        string = replaceCalcAll(string, player);
-
+        else {
+            string = string.replace("{allPlayer}", this.playerList.get(0).getName()).replace("{playerName}", this.playerList.get(0).getName()).replace("{playerIndex}", "0").replace("{player}", this.playerList.get(0).getName());
+        }
+        string = this.replaceCalcAll(string, player);
         return string;
     }
 
-    public List<String> replaceAllPlayer(String string, List<Player> playerList) {
-        string = replaceGameData(string);
-        List<String> playerCmdList = new ArrayList<>();
-        for (Player p : playerList) {
-            playerCmdList.add(replacePlayerData(string, p));
+    public List<String> replaceAllPlayer(String string, final List<Player> playerList) {
+        string = this.replaceGameData(string);
+        final List<String> playerCmdList = new ArrayList<>();
+        for (final Player p : playerList) {
+            playerCmdList.add(this.replacePlayerData(string, p));
         }
         return playerCmdList;
     }
 
-    public String replaceAll(String string, Player player) {
-        return replacePlayerData(replaceGameData(string), player);
-    }
-
-    public void executeCommands(List<String> commands, Player player) {
-        for (String cmd : commands) {
-            if (cmd.contains("{allPlayer}")) {
-                for (String playerCmd : replaceAllPlayer(cmd, playerList))
-                    Bukkit.getServer().dispatchCommand(console, playerCmd);
-            } else Bukkit.getServer().dispatchCommand(console, replaceAll(cmd, player));
+    public String replaceAll(final String string, final Player player) {
+        if (string == null) {
+            return null;
         }
+        return this.replacePlayerData(this.replaceGameData(string), player);
     }
 
-    public void executeCommands(String command, Player player) {
+    public void executeCommands(final FreedyCommandSender sender, final List<String> commands, final Player player) {
+        String issueCmd = "none";
+        try {
+        for (final String cmd : commands) {
+            if (cmd.contains("{allPlayer}")) {
+                for (final String playerCmd : this.replaceAllPlayer(cmd, this.playerList)) {
+                    issueCmd = playerCmd;
+                    Bukkit.getServer().dispatchCommand(sender, playerCmd);
+                }
+            } else if (cmd.contains("{onlinePlayer}")) {
+                for (final String playerCmd : this.replaceAllPlayer(cmd, new ArrayList<>(Bukkit.getOnlinePlayers()))) {
+                    issueCmd = playerCmd;
+                    Bukkit.getServer().dispatchCommand(sender, playerCmd);
+                }
+            }
+            else {
+                issueCmd = cmd;
+                Bukkit.getServer().dispatchCommand(sender, this.replaceAll(cmd, player));
+            }
+        }
+        } catch (CommandException e) {
+            e.printStackTrace();
+            System.out.println("§6issue game: " + gameName);
+            System.out.println("§6issue line: " + issueCmd);
+            System.out.println("§6issue cause: " );
+        }
+
+    }
+
+    public String executeCommand(final FreedyCommandSender sender, final String command, final Player player) {
+        String cmd = "none";
+        try {
             if (command.contains("{allPlayer}")) {
-                for (String playerCmd : replaceAllPlayer(command, playerList))
-                    Bukkit.getServer().dispatchCommand(console, playerCmd);
-            } else Bukkit.getServer().dispatchCommand(console, replaceAll(command, player));
+                for (final String playerCmd : this.replaceAllPlayer(command, this.playerList)) {
+                    cmd = playerCmd;
+                    Bukkit.getServer().dispatchCommand(sender, playerCmd);
+                }
+            } else if (command.contains("{onlinePlayer}")) {
+                for (final String playerCmd : this.replaceAllPlayer(command, new ArrayList<>(Bukkit.getOnlinePlayers()))) {
+                    cmd = playerCmd;
+                    Bukkit.getServer().dispatchCommand(sender, playerCmd);
+                }
+            } else {
+                cmd = command;
+                Bukkit.getServer().dispatchCommand(sender, this.replaceAll(command, player));
+            }
+            return sender.output;
+        } catch (CommandException e) {
+            e.printStackTrace();
+            System.out.println("§6issue game: " + gameName);
+            System.out.println("§6issue line: " + cmd);
+            System.out.println("§6issue cause: ");
+        }
+        return "false";
+    }
+
+    public String executeEventCommands(final String command, final Player player) {
+        String cmd = "none";
+        final FreedyCommandSender sender = new FreedyCommandSender();
+        try {
+
+
+            if (command.contains("{allPlayer}")) {
+                for (final String playerCmd : this.replaceAllPlayer(command, this.playerList)) {
+                    cmd = playerCmd;
+                    Bukkit.getServer().dispatchCommand(sender, playerCmd);
+                }
+            }
+            else if (command.contains("{onlinePlayer}")) {
+                for (final String playerCmd : this.replaceAllPlayer(command, new ArrayList<>(Bukkit.getOnlinePlayers()))) {
+                    cmd = playerCmd;
+                    Bukkit.getServer().dispatchCommand(sender, playerCmd);
+                }
+            }
+            else {
+                cmd = command;
+                Bukkit.getServer().dispatchCommand(sender, this.replaceAll(command, player));
+            }
+            return sender.output;
+        } catch (CommandException e) {
+            e.printStackTrace();
+
+            System.out.println("§6issue game: " + gameName);
+            System.out.println("§6issue line: " + cmd);
+            System.out.println("§6issue cause: " );
+        }
+        return "false";
     }
 
 }

@@ -1,44 +1,50 @@
+// 
+// Decompiled by Procyon v0.5.36
+// 
+
 package freedy.freedyminigamemaker.events;
 
 import freedy.freedyminigamemaker.FreedyMinigameMaker;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import freedy.freedyminigamemaker.MiniGame;
+import freedy.freedyminigamemaker.MiniGames;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
 
-import java.util.List;
-
-public class MoveEvent implements Listener {
-
-    private final FreedyMinigameMaker plugin;
-
-    public MoveEvent(FreedyMinigameMaker plugin) {
-        this.plugin = plugin;
+public class MoveEvent implements Listener
+{
+    MiniGames miniGames;
+    
+    public MoveEvent() {
+        this.miniGames = FreedyMinigameMaker.miniGames;
     }
-
-
+    
     @EventHandler
-    public void onMove(PlayerMoveEvent event) {
-        Location to = event.getTo();
-        Location from = event.getFrom();
-        if (!to.getBlock().equals(from.getBlock())) {
-            Block blockTo = to.getBlock();
-            Block blockFrom = from.getBlock();
-            Player player = event.getPlayer();
-            String playerName = player.getName();
-            List<String> gameList = plugin.getConfig().getStringList("gameList");
-            for (String gameName : gameList) {
-                if (plugin.getConfig().getStringList("miniGames." + gameName + ".players").contains(playerName)) {
-                    switch (plugin.getConfig().getString("miniGames." + gameName + ".gameType")) {
-                        case "hideAndSeek":
-                            blockFrom.setType(Material.valueOf(plugin.getConfig().getString("miniGames." + gameName + ".playerData." + playerName + ".backup")));
-                            plugin.getConfig().set("miniGames." + gameName + "playerData" + playerName + "backup", blockTo.getType().toString());
-                            blockTo.setType(Material.valueOf(plugin.getConfig().getString("miniGames." + gameName + ".playerData." + playerName + ".blockData")));
-                            plugin.saveConfig();
-                            break;
+    public void onMove(final PlayerMoveEvent event) {
+        final Block from = event.getFrom().getBlock();
+        final Block to = event.getTo().getBlock();
+        if (from.getLocation().getBlockX() != to.getLocation().getBlockX() || from.getLocation().getBlockY() != to.getLocation().getBlockY() || from.getLocation().getBlockZ() != to.getLocation().getBlockZ()) {
+            final Player player = event.getPlayer();
+            if (this.miniGames.isJoined(player)) {
+                final MiniGame miniGame = this.miniGames.getJoined(player);
+                for (final String cmd : miniGame.getMessageList("moveCmd")) {
+                    final String output = miniGame.executeEventCommands(cmd
+                            .replace("{fromBlockType}", from.getType().name())
+                            .replace("{fromBlockX}", String.valueOf(from.getX()))
+                            .replace("{fromBlockY}", String.valueOf(from.getY()))
+                            .replace("{fromBlockZ}", String.valueOf(from.getZ()))
+                            .replace("{fromBlockFace}", from.getFace(from).name())
+                            .replace("{fromBlockWorld}", from.getWorld().getName())
+                            .replace("{toBlockType}", to.getType().name())
+                            .replace("{toBlockX}", String.valueOf(to.getX()))
+                            .replace("{toBlockY}", String.valueOf(to.getY()))
+                            .replace("{toBlockZ}", String.valueOf(to.getZ()))
+                            .replace("{toBlockFace}", to.getFace(to).name())
+                            .replace("{toBlockWorld}", to.getWorld().getName()), player);
+                    if (output.equals("false")) {
+                        event.setCancelled(true);
                     }
                 }
             }

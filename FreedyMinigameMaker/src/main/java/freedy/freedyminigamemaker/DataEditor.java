@@ -1,126 +1,85 @@
+// 
+// Decompiled by Procyon v0.5.36
+// 
+
 package freedy.freedyminigamemaker;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class DataEditor {
-
-    public final List<String> teamTypes = new ArrayList<String>() { {
-        add("blue");
-        add("red");
-    } };
-
-    public final String superPath = "miniGames.";
-
+public class DataEditor
+{
     public String gameName;
-
     public String gamePath;
-
     public FreedyMinigameMaker plugin;
-
-    public DataEditor(FreedyMinigameMaker plugin, String gameName) {
+    
+    public DataEditor(final FreedyMinigameMaker plugin, final String gameName) {
         this.plugin = plugin;
         this.gameName = gameName;
-        this.gamePath = superPath + gameName + ".";
+        this.gamePath = "miniGames." + gameName + ".";
     }
-
-    public void remove(String gameName) {
-        List<String> gameList = plugin.getConfig().getStringList("gameList");
+    
+    public void remove(final String gameName) {
+        final List<String> gameList = this.plugin.getConfig().getStringList("gameList");
         gameList.remove(gameName);
-        plugin.getConfig().set("miniGames." + gameName, null);
-        plugin.getConfig().set("gameList", gameList);
-        plugin.saveConfig();
+        this.plugin.getConfig().set("miniGames." + gameName, null);
+        this.plugin.getConfig().set("gameList", gameList);
+        this.plugin.saveConfig();
     }
-
-    public void create(int maxPlayers, int maxStartPlayers, int waitForStartTime, int waitForEndTime) {
-        //<미니게임이름> <미니게임최대인원> <미니게임시작인원> <시작대기시간초> <게임종료시간초>
-        plugin.getConfig().set(gamePath + "maxPlayers", maxPlayers);
-        plugin.getConfig().set(gamePath + "maxStartPlayers", maxStartPlayers);
-        plugin.getConfig().set(gamePath + "waitForStartTime", waitForStartTime);
-        plugin.getConfig().set(gamePath + "waitForEndTime", waitForEndTime);
-        plugin.getConfig().set(gamePath + "gameType", "death");
-        plugin.getConfig().set(gamePath + "defaultStartGameMode", "ADVENTURE");
-        plugin.getConfig().set(gamePath + "defaultEndGameMode", "ADVENTURE");
-        plugin.getConfig().set(gamePath + "defaultStartMaxHeart", 20.0);
-        plugin.getConfig().set(gamePath + "redTeamStartMaxHeart", 20.0);
-        plugin.getConfig().set(gamePath + "blueTeamStartMaxHeart", 20.0);
-        plugin.getConfig().set(gamePath + "timePerPlayer", 1);
-        plugin.getConfig().set(gamePath + "joinMsg", "§6{player}이(가) {game}에 참여했습니다 §7({playerAmount}/{maxPlayers})");
-        plugin.getConfig().set(gamePath + "quitMsg", "§6{player}이(가) 떠났습니다");
-        plugin.getConfig().set(gamePath + "startMsg", "§a{game}이(가) 시작되었어요!");
-        plugin.getConfig().set(gamePath + "noWinnerEndMsg", "§a{game}이(가) 종료되었어요, 무승부입니다!");
-        plugin.getConfig().set(gamePath + "redWinEndMsg", "§a{game}이(가) 종료되었어요, 레드팀이 승리하였습니다!");
-        plugin.getConfig().set(gamePath + "blueWinEndMsg", "§a{game}이(가) 종료되었어요, 블루팀이 승리하였습니다!");
-        plugin.getConfig().set(gamePath + "endMsg", "§a{game}이(가) 종료되었어요! 승자는 {player}입니다!");
-        plugin.getConfig().set(gamePath + "startTimerMsg", "§7{time}초 후에 시작...");
-        plugin.getConfig().set(gamePath + "endTimerMsg", "§7{time}초 후에 종료...");
-        plugin.getConfig().set(gamePath + "morePlayerMsg", "§c플레이어를 더 기다리고 있습니다...");
-        plugin.getConfig().set(gamePath + "beZombieMsg", "§c{player}이(가) {killer}에 의해 좀비가 되었습니다!");
-        plugin.getConfig().set(gamePath + "repeatTime", -1);
-        plugin.getConfig().set(gamePath + "repeatCmd", new ArrayList<>());
-        plugin.getConfig().set(gamePath + "conStartCmd", new ArrayList<>());
-        plugin.getConfig().set(gamePath + "joinCmd", new ArrayList<>());
-        plugin.getConfig().set(gamePath + "quitCmd", new ArrayList<>());
-        plugin.getConfig().set(gamePath + "conEndCmd", new ArrayList<>());
-        plugin.getConfig().set(gamePath + "winnerCmd", new ArrayList<>());
-        List<String> gameList = plugin.getConfig().getStringList("gameList");
-        gameList.add(gameName);
-        plugin.getConfig().set("gameList", gameList);
-        plugin.saveConfig();
+    
+    public void create(final int maxPlayers, final int maxStartPlayers, final int waitForStartTime) {
+        this.plugin.getConfig().set(this.gamePath + "maxPlayers", maxPlayers);
+        this.plugin.getConfig().set(this.gamePath + "maxStartPlayers", maxStartPlayers);
+        this.plugin.getConfig().set(this.gamePath + "waitForStartTime", waitForStartTime*20);
+        this.plugin.getConfig().set(this.gamePath + "gameType", "death");
+        this.plugin.getConfig().set(this.gamePath + "joinMsg", "§6{player}\uc774(\uac00) {game}\uc5d0 \ucc38\uc5ec\ud588\uc2b5\ub2c8\ub2e4 §7({playerAmount}/{maxPlayers})");
+        this.plugin.getConfig().set(this.gamePath + "quitMsg", "§6{player}\uc774(\uac00) \ub5a0\ub0ac\uc2b5\ub2c8\ub2e4");
+        this.plugin.getConfig().set(this.gamePath + "startMsg", "§a{game}\uc774(\uac00) \uc2dc\uc791\ub418\uc5c8\uc5b4\uc694!");
+        this.plugin.getConfig().set(this.gamePath + "morePlayerMsg", "§c\ud50c\ub808\uc774\uc5b4\ub97c \ub354 \uae30\ub2e4\ub9ac\uace0 \uc788\uc2b5\ub2c8\ub2e4...");
+        this.plugin.getConfig().set(this.gamePath + "conStartCmd", new ArrayList<>());
+        this.plugin.getConfig().set(this.gamePath + "joinCmd", new ArrayList<>());
+        this.plugin.getConfig().set(this.gamePath + "quitCmd", new ArrayList<>());
+        this.plugin.getConfig().set(this.gamePath + "conEndCmd", new ArrayList<>());
+        final List<String> gameList = this.plugin.getConfig().getStringList("gameList");
+        gameList.add(this.gameName);
+        this.plugin.getConfig().set("gameList", gameList);
+        this.plugin.saveConfig();
     }
-
-    public void addLocation(String locationPath, String world, double x, double y, double z, float yaw, float pitch) {
-        int locNum = plugin.getConfig().getInt(gamePath + "." + locationPath + "Amount") + 1;
-        plugin.getConfig().set(gamePath + locationPath + "Amount", locNum);
-        plugin.getConfig().set(gamePath + locationPath + "." + locNum + ".world", world);
-        plugin.getConfig().set(gamePath + locationPath + "." + locNum + ".x", x);
-        plugin.getConfig().set(gamePath + locationPath + "." + locNum + ".y", y);
-        plugin.getConfig().set(gamePath + locationPath + "." + locNum + ".z", z);
-        plugin.getConfig().set(gamePath + locationPath + "." + locNum + ".yaw", yaw);
-        plugin.getConfig().set(gamePath + locationPath + "." + locNum + ".pitch", pitch);
-        //plugin.getConfig().set(gamePath + locationPath + "isExist", true);
-        plugin.saveConfig();
+    
+    public void addLocation(final String locationPath, final String world, final double x, final double y, final double z, final float yaw, final float pitch) {
+        final int locNum = this.plugin.getConfig().getInt(this.gamePath + "." + locationPath + "Amount") + 1;
+        this.plugin.getConfig().set(this.gamePath + locationPath + "Amount", locNum);
+        this.plugin.getConfig().set(this.gamePath + locationPath + "." + locNum + ".world", world);
+        this.plugin.getConfig().set(this.gamePath + locationPath + "." + locNum + ".x", x);
+        this.plugin.getConfig().set(this.gamePath + locationPath + "." + locNum + ".y", y);
+        this.plugin.getConfig().set(this.gamePath + locationPath + "." + locNum + ".z", z);
+        this.plugin.getConfig().set(this.gamePath + locationPath + "." + locNum + ".yaw", yaw);
+        this.plugin.getConfig().set(this.gamePath + locationPath + "." + locNum + ".pitch", pitch);
+        this.plugin.saveConfig();
     }
-
-    public void setLocation(String locationPath, String world, double x, double y, double z, float yaw, float pitch) {
-        plugin.getConfig().set(gamePath + locationPath + ".world", world);
-        plugin.getConfig().set(gamePath + locationPath + ".x", x);
-        plugin.getConfig().set(gamePath + locationPath + ".y", y);
-        plugin.getConfig().set(gamePath + locationPath + ".z", z);
-        plugin.getConfig().set(gamePath + locationPath + ".yaw", yaw);
-        plugin.getConfig().set(gamePath + locationPath + ".pitch", pitch);
-
-        //plugin.getConfig().set(gamePath + locationPath + "isExist", true);
-        plugin.saveConfig();
+    
+    public void setLocation(final String locationPath, final String world, final double x, final double y, final double z, final float yaw, final float pitch) {
+        this.plugin.getConfig().set(this.gamePath + locationPath + ".world", world);
+        this.plugin.getConfig().set(this.gamePath + locationPath + ".x", x);
+        this.plugin.getConfig().set(this.gamePath + locationPath + ".y", y);
+        this.plugin.getConfig().set(this.gamePath + locationPath + ".z", z);
+        this.plugin.getConfig().set(this.gamePath + locationPath + ".yaw", yaw);
+        this.plugin.getConfig().set(this.gamePath + locationPath + ".pitch", pitch);
+        this.plugin.saveConfig();
     }
-
-
-
-    public void setLocation(String locationPath, String world, double x, double y, double z) {
-        plugin.getConfig().set(gamePath + locationPath + ".world", world);
-        plugin.getConfig().set(gamePath + locationPath + ".x", x);
-        plugin.getConfig().set(gamePath + locationPath + ".y", y);
-        plugin.getConfig().set(gamePath + locationPath + ".z", z);
-        plugin.saveConfig();
+    
+    public void setLocation(final String locationPath, final String world, final double x, final double y, final double z) {
+        this.plugin.getConfig().set(this.gamePath + locationPath + ".world", world);
+        this.plugin.getConfig().set(this.gamePath + locationPath + ".x", x);
+        this.plugin.getConfig().set(this.gamePath + locationPath + ".y", y);
+        this.plugin.getConfig().set(this.gamePath + locationPath + ".z", z);
+        this.plugin.saveConfig();
     }
-
-    public void addMessage(String messagePath, String message) {
-        List<String> messageList = plugin.getConfig().getStringList(gamePath + messagePath);
+    
+    public void addMessage(final String messagePath, final String message) {
+        final List<String> messageList = this.plugin.getConfig().getStringList(this.gamePath + messagePath);
         messageList.add(message);
-        plugin.getConfig().set(gamePath + messagePath, messageList);
-        plugin.saveConfig();
-    }
-
-
-    public void set(String path, Object object) {
-        plugin.getConfig().set(path, object);
-    }
-
-    public void save() {
-        plugin.saveConfig();
-    }
-
-    public void reload() {
-        plugin.reloadConfig();
+        this.plugin.getConfig().set(this.gamePath + messagePath, messageList);
+        this.plugin.saveConfig();
     }
 }
