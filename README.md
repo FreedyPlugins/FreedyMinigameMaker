@@ -1,8 +1,8 @@
 # FreedyMinigameMaker
 Minecraft Minigame making tool
 
-## 웹사이트
+## website
 https://freedyplugins.github.io/FreedyPlugins/FreedyMinigameMaker
 
-## 최신 버전 다운로드 
+## fresh update
 https://github.com/FreedyPlugins/FreedyMinigameMaker/releases/latest/download/FreedyMinigameMaker.jar
