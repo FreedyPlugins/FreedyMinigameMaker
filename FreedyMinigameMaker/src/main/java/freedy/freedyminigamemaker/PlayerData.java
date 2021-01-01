@@ -1,10 +1,5 @@
-// 
-// Decompiled by Procyon v0.5.36
-// 
-
 package freedy.freedyminigamemaker;
 
-import org.apache.commons.lang.StringUtils;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -20,7 +15,8 @@ public class PlayerData
     public Map<String, BossBar> bossBar;
     public String scoreBoardTitle;
     public Map<String, Inventory> inventory;
-    
+
+
     public PlayerData(final Player player) {
         this.bossBar = new HashMap<>();
         this.inventory = new HashMap<>();

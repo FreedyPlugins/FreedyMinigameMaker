@@ -1,7 +1,3 @@
-// 
-// Decompiled by Procyon v0.5.36
-// 
-
 package freedy.freedyminigamemaker;
 
 import java.io.IOException;
@@ -32,7 +28,7 @@ public class FileStore
         return this.config;
     }
     
-    public void save() {
+    public void saveConfig() {
         try {
             this.config.save(this.file);
         }

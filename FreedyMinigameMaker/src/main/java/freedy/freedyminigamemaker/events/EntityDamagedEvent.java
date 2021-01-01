@@ -1,7 +1,3 @@
-// 
-// Decompiled by Procyon v0.5.36
-// 
-
 package freedy.freedyminigamemaker.events;
 
 import freedy.freedyminigamemaker.FreedyMinigameMaker;
@@ -79,12 +75,10 @@ public class EntityDamagedEvent implements Listener {
                     }
                 }
 
-                String clickedEntityName;
-                String clickedEntityType;
-                String clickedEntityUuid;
-                clickedEntityName = damagedEntity.getName();
-                clickedEntityType = damagedEntity.getType().name();
-                clickedEntityUuid = damagedEntity.getUniqueId().toString();
+                String clickedEntityName = damagedEntity.getName();
+                String clickedEntityType = damagedEntity.getType().name();
+                String clickedEntityUuid = damagedEntity.getUniqueId().toString();
+
                 for (final String cmd : miniGame2.getMessageList("damagedCmd")) {
                     final String output = miniGame2.executeEventCommands(cmd
                                     .replace("{entityName}", clickedEntityName)

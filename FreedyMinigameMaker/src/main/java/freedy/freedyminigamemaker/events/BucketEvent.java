@@ -1,18 +1,14 @@
-// 
-// Decompiled by Procyon v0.5.36
-// 
-
 package freedy.freedyminigamemaker.events;
 
+import freedy.freedyminigamemaker.FreedyMinigameMaker;
+import freedy.freedyminigamemaker.MiniGame;
+import freedy.freedyminigamemaker.MiniGames;
 import org.bukkit.block.BlockFace;
 import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.EventHandler;
-import freedy.freedyminigamemaker.MiniGame;
 import org.bukkit.entity.Player;
 import org.bukkit.block.Block;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
-import freedy.freedyminigamemaker.FreedyMinigameMaker;
-import freedy.freedyminigamemaker.MiniGames;
 import org.bukkit.event.Listener;
 
 public class BucketEvent implements Listener

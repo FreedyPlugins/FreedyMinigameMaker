@@ -1,7 +1,3 @@
-// 
-// Decompiled by Procyon v0.5.36
-// 
-
 package freedy.freedyminigamemaker.commands;
 
 import org.bukkit.Server;
@@ -15,6 +11,7 @@ import org.bukkit.plugin.Plugin;
 
 import java.util.Arrays;
 import java.util.Set;
+import java.util.UUID;
 
 public class FreedyCommandSender implements ConsoleCommandSender
 {
@@ -31,7 +28,17 @@ public class FreedyCommandSender implements ConsoleCommandSender
     public void sendMessage(final String[] messages) {
         this.output = Arrays.toString(messages);
     }
-    
+
+    @Override
+    public void sendMessage(UUID sender, String message) {
+
+    }
+
+    @Override
+    public void sendMessage(UUID sender, String[] messages) {
+
+    }
+
     public Server getServer() {
         return null;
     }
@@ -63,7 +70,12 @@ public class FreedyCommandSender implements ConsoleCommandSender
     
     public void sendRawMessage(final String message) {
     }
-    
+
+    @Override
+    public void sendRawMessage(UUID sender, String message) {
+
+    }
+
     public boolean isPermissionSet(final String name) {
         return false;
     }

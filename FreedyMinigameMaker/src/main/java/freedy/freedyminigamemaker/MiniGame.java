@@ -1,10 +1,7 @@
-// 
-// Decompiled by Procyon v0.5.36
-// 
-
 package freedy.freedyminigamemaker;
 
 import freedy.freedyminigamemaker.commands.FreedyCommandSender;
+import net.jafama.FastMath;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.*;
 import org.bukkit.block.Biome;
@@ -15,6 +12,7 @@ import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.command.CommandException;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -25,12 +23,8 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
+import org.bukkit.util.Vector;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -39,14 +33,17 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 
 public class MiniGame extends DataStore {
+
     int taskId;
     public List<Integer> taskIdList;
     public BukkitScheduler scheduler;
     public FreedyCommandSender freedyCommandSender;
     public Map<String, String> customData;
     public List<BlockState> blockList;
+    public Map<String, List<BlockState>> customBlockList;
     public List<Player> playerList;
     public List<PlayerData> playerDataList;
+    public Map<String, List<ItemStack>> inventoryList;
     int playerAmount;
     boolean isPlaying;
     boolean isWaiting;
@@ -61,8 +58,10 @@ public class MiniGame extends DataStore {
         super.plugin = plugin;
         this.customData = new HashMap<>();
         this.blockList = new ArrayList<>();
+        this.customBlockList = new HashMap<>();
         this.playerList = new ArrayList<>();
         this.playerDataList = new ArrayList<>();
+        this.inventoryList = new HashMap<>();
         this.playerAmount = 0;
         this.waitTime = 0;
         this.repeaterTimeList = new HashMap<>();
@@ -114,6 +113,20 @@ public class MiniGame extends DataStore {
         }
     }
 
+    public void addBlock(final String blockName, final BlockState blockState) {
+        List<BlockState> blockList = this.customBlockList.get(blockName);
+        if (blockList == null) blockList = new ArrayList<>();
+        if (!blockList.contains(blockState)) {
+            for (final BlockState bs : blockList) {
+                if (bs.getLocation().equals(blockState.getLocation())) {
+                    return;
+                }
+            }
+            blockList.add(blockState);
+        }
+        this.customBlockList.put(blockName, blockList);
+    }
+
     public void resetBlocks() {
         for (final BlockState blockState : this.blockList) {
             final Block block = blockState.getLocation().getBlock();
@@ -123,6 +136,23 @@ public class MiniGame extends DataStore {
             }
         }
         this.blockList = new ArrayList<>();
+        final Set<String> blockNameList = this.customBlockList.keySet();
+        for (String blockName : blockNameList) {
+            resetBlocks(blockName);
+        }
+    }
+
+    public void resetBlocks(String blockName) {
+        List<BlockState> blockList = this.customBlockList.get(blockName);
+        if (blockList == null) return;
+        for (final BlockState blockState : blockList) {
+            final Block block = blockState.getLocation().getBlock();
+            if (!block.getState().equals(blockState)) {
+                block.setType(blockState.getType());
+                blockState.update();
+            }
+        }
+        this.customBlockList.remove(blockName);
     }
 
     public void setCustomData(final String key, final String value) {
@@ -157,7 +187,15 @@ public class MiniGame extends DataStore {
         this.taskId = this.scheduler.scheduleSyncRepeatingTask(this.plugin, this::checker, 1L, 1L);
     }
 
+    public void cancelAllTask() {
+        for (int taskId : this.taskIdList) {
+            this.scheduler.cancelTask(taskId);
+        }
+        taskIdList = new ArrayList<>();
+    }
+
     void checker() {
+        if (playerList == null || playerList.isEmpty()) return;
         if (this.isPlaying) {
                 for (final String repeatName : this.getRepeatList()) {
                     int repeaterTimer = (this.repeaterTimeList.get(repeatName) == null) ? 0 : this.repeaterTimeList.get(repeatName);
@@ -171,7 +209,7 @@ public class MiniGame extends DataStore {
                         continue;
                     }
                     for (final String cmd : this.getMessageList("repeats." + repeatName + ".cmd")) {
-                        executeCommand(this.freedyCommandSender, cmd, playerList.get(0));
+                        if (executeEventCommands(cmd, playerList.get(0)).equals("false")) break;
                     }
                     if (this.getRepeatTimes(repeatName).isEmpty()) {
                         this.repeaterTimeList.put(repeatName, 0);
@@ -179,9 +217,9 @@ public class MiniGame extends DataStore {
                 }
                 ++this.waitTime;
 
-        } else if (this.playerList.size() >= this.getMaxStartPlayers()) {
+        } else if (this.getMaxStartPlayers() > 0 || this.playerList.size() >= this.getMaxStartPlayers()) {
             this.isWaiting = true;
-            if (this.waitTime >= this.getWaitForStartTime() && 0 < this.getWaitForStartTime()) {
+            if (this.waitTime >= this.getWaitForStartTime() && 0 <= this.getWaitForStartTime()) {
                 this.isWaiting = false;
                 this.isPlaying = true;
                 this.waitTime = 0;
@@ -222,7 +260,7 @@ public class MiniGame extends DataStore {
         if (this.getGameList().contains(this.gameName)) {
             if (!this.playerList.contains(player)) {
                 if (!this.getNeedClearInv() || this.hasEmptyInventory(player)) {
-                    if (this.playerList.size() < this.getMaxPlayers()) {
+                    if (this.getMaxPlayers() < 1 || this.playerList.size() < this.getMaxPlayers()) {
                         if (!this.isPlaying) {
                             return true;
                         } else {
@@ -246,7 +284,7 @@ public class MiniGame extends DataStore {
             if (this.getGameList().contains(this.gameName)) {
                 if (!this.playerList.contains(player)) {
                     if (!this.getNeedClearInv() || this.hasEmptyInventory(player)) {
-                        if (this.playerList.size() < this.getMaxPlayers()) {
+                        if (this.getMaxPlayers() < 1 || this.playerList.size() < this.getMaxPlayers()) {
                             if (!this.isPlaying) {
                                 return true;
                             } else {
@@ -274,10 +312,7 @@ public class MiniGame extends DataStore {
         }
 
         for (final String cmd : this.getMessageList("preJoinCmd")) {
-            final String output = this.executeEventCommands(cmd, player);
-            if (output.equals("false")) {
-                return;
-            }
+            if (this.executeEventCommands(cmd, player).equals("false")) return;
         }
         this.playerList.add(player);
         this.playerDataList.add(new PlayerData(player));
@@ -363,11 +398,13 @@ public class MiniGame extends DataStore {
         this.playerAmount = 0;
         this.customData = new HashMap<>();
         this.blockList = new ArrayList<>();
+        this.customBlockList = new HashMap<>();
         this.playerList = new ArrayList<>();
         this.playerDataList = new ArrayList<>();
-        //this.teamPlayers.replaceAll((n, v) -> new ArrayList());
+        this.inventoryList = new HashMap<>();
         this.stopChecker();
-        FreedyMinigameMaker.miniGames.reset(gameName);
+
+        FreedyMinigameMaker.miniGames.reset(this.gameName);
     }
 
     public boolean wasNothingToStop() {
@@ -598,8 +635,22 @@ public class MiniGame extends DataStore {
         player.updateInventory();
     }
 
+    public void giveItem(final Player player, final String itemName, int amount) {
+        ItemStack itemStack = this.getItem(itemName);
+        itemStack.setAmount(amount);
+        player.getInventory().addItem(itemStack);
+        player.updateInventory();
+    }
+
     public void giveItemHand(final Player player, final String itemName) {
         player.getInventory().setItemInMainHand(this.getItem(itemName));
+        player.updateInventory();
+    }
+
+    public void giveItemHand(final Player player, final String itemName, int amount) {
+        ItemStack itemStack = this.getItem(itemName);
+        itemStack.setAmount(amount);
+        player.getInventory().setItemInMainHand(itemStack);
         player.updateInventory();
     }
 
@@ -643,6 +694,21 @@ public class MiniGame extends DataStore {
         player.updateInventory();
     }
 
+    public void saveInv(String invName, List<ItemStack> itemStacks) {
+        inventoryList.put(invName, itemStacks);
+    }
+
+    public void loadInv(Player player, String invName) {
+        player.updateInventory();
+        List<ItemStack> itemStacks = inventoryList.get(invName);
+        if (itemStacks == null || itemStacks.size() == 0) return;
+        PlayerInventory inventory = player.getInventory();
+        for (int i = 0; i < inventory.getSize(); i++) {
+            inventory.setItem(i, itemStacks.get(i));
+        }
+        player.updateInventory();
+    }
+
     public boolean isExistingTitle(final String title) {
         return this.getInventoryTitleList().contains(title);
     }
@@ -662,19 +728,31 @@ public class MiniGame extends DataStore {
         final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
         final String data = stringList.get(0);
         String result = "none";
-        Method method;
         if (stringList.size() == 3) {
-            BigDecimal big1 = BigDecimal.valueOf(Double.parseDouble(stringList.get(1)));
-            BigDecimal big2 = BigDecimal.valueOf(Double.parseDouble(stringList.get(2)));
 
-            try {
-                method = BigDecimal.class.getMethod(data, BigDecimal.class);
-                try {
-                    result = String.valueOf(method.invoke(big1, big2));
-                } catch (IllegalArgumentException | IllegalAccessException | InvocationTargetException e) { e.printStackTrace(); }
-            } catch (SecurityException | NoSuchMethodException e) { e.printStackTrace(); }
+            double big1 = Double.parseDouble(stringList.get(1));
+            double big2 = Double.parseDouble(stringList.get(2));
+
+
+            switch (data) {
+                case "add":
+                    result = String.valueOf(big1 + big2);
+                    break;
+                case "subtract":
+                    result = String.valueOf(big1 - big2);
+                    break;
+                case "multiply":
+                    result = String.valueOf(big1 * big2);
+                    break;
+                case "divide":
+                    result = String.valueOf(big1 / big2);
+                    break;
+                case "remainder":
+                    result = String.valueOf(big1 % big2);
+                    break;
+            }
+
         }
-
         return string.replace("{math(" + area + ")}", result);
     }
 
@@ -701,10 +779,21 @@ public class MiniGame extends DataStore {
                     result = pList.toString().substring(1, pList.toString().length() - 1);
                     break;
                 }
+            default:
+                result = miniGame.getCustomData(stringList.get(1));
 
         }
 
         return string.replace("{miniGameData(" + area + ")}", result);
+    }
+
+    public String replaceHasPerm(final String string, Player player) {
+        String area = getSubFunc(string, "{hasPerm(");
+        if (area == null) {
+            return string;
+        }
+        String result = String.valueOf(player.hasPermission(area));
+        return string.replace("{hasPerm(" + area + ")}", result);
     }
 
     public String replaceTargetBlock(final String string, Player player) {
@@ -724,6 +813,86 @@ public class MiniGame extends DataStore {
 
 
         return string.replace("{playerTargetBlock(" + area + ")}", result);
+    }
+
+    public String replaceTargetEntity(final String string, Player player) {
+        String area = getSubFunc(string, "{playerTargetEntity(");
+        if (area == null) {
+            return string;
+        }
+        Location eye = player.getEyeLocation();
+
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        final int data = Integer.parseInt(stringList.get(0));
+        for (Entity entity : player.getNearbyEntities(data, data, data)) {
+
+            if (entity instanceof LivingEntity) {
+                LivingEntity livingEntity = (LivingEntity) entity;
+                Vector toEntity = livingEntity.getEyeLocation().toVector().subtract(eye.toVector());
+                double dot = toEntity.normalize().dot(eye.getDirection());
+
+                if (dot > 0.99D) {
+                    String result;
+                        Location loc = livingEntity.getLocation();
+                        result = loc.getWorld().getName() + ", " + loc.getX() + ", " + loc.getY() + ", " + loc.getZ();
+
+
+                    return string.replace("{playerTargetEntity(" + area + ")}", result);
+                }
+            }
+
+        }
+        return "none";
+    }
+
+    public String replaceItemType(final String string, Player player) {
+        String area = getSubFunc(string, "{itemType(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        final int data = Integer.parseInt(stringList.get(0));
+        String result;
+
+        ItemStack itemStack = player.getInventory().getItem(data);
+        if (itemStack != null) {
+            result = itemStack.getType().name();
+        }
+        else result = "none";
+
+
+        return string.replace("{itemType(" + area + ")}", result);
+    }
+
+    public String replaceItemAmount(final String string, Player player) {
+        String area = getSubFunc(string, "{itemAmount(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        final int data = Integer.parseInt(stringList.get(0));
+        String result;
+
+        ItemStack itemStack = player.getInventory().getItem(data);
+        if (itemStack != null) {
+            result = String.valueOf(itemStack.getAmount());
+        }
+        else result = "none";
+
+
+        return string.replace("{itemAmount(" + area + ")}", result);
+    }
+
+    public String replaceHasItem(final String string, Player player) {
+        String area = getSubFunc(string, "{hasItem(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        final String data = stringList.get(0);
+        String result = String.valueOf(player.getInventory().first(Material.valueOf(data)));
+
+        return string.replace("{hasItem(" + area + ")}", result);
     }
 
     public String replaceColor(final String string) {
@@ -767,6 +936,27 @@ public class MiniGame extends DataStore {
             result = "true";
         }
         return string.replace("{contain(" + area + ")}", result);
+    }
+
+    public String replaceSoftContain(final String string) {
+        String area = getSubFunc(string, "{softContain(");
+        if (area == null) {
+            return string;
+        }
+        final List<String> stringList = new ArrayList<>(Arrays.asList(area.split(", ")));
+        final String data = stringList.get(0);
+        stringList.remove(0);
+        if (stringList.get(0).equals("none")) {
+            stringList.remove(0);
+        }
+
+
+        String message2 = String.join(", ", stringList);
+        String result = "false";
+        if (message2.contains(data)) {
+            result = "true";
+        }
+        return string.replace("{softContain(" + area + ")}", result);
     }
 
     public String replaceSub(final String string) {
@@ -832,7 +1022,7 @@ public class MiniGame extends DataStore {
         Location location = new Location(world, x, y, z);
         BlockState blockState = location.getBlock().getState();
         blockState.getData();
-        String result = blockState.getTypeId() + ":" + String.valueOf(blockState.getData().toItemStack(1).getDurability());
+        String result = blockState.getType().name();
         return string.replace("{blockName(" + area + ")}", result);
     }
 
@@ -846,27 +1036,8 @@ public class MiniGame extends DataStore {
     }
 
     public String replaceCalc(final String string) {
-        String area = getSubFunc(string, "{calc(");
-        if (area == null) {
-            return string;
-        }
-        final ScriptEngineManager mgr = new ScriptEngineManager();
-        final ScriptEngine engine = mgr.getEngineByName("JavaScript");
-        try {
-            final Object subResult = engine.eval(area);
-            String result;
-            if (subResult instanceof Integer) {
-                result = ((Integer)subResult).toString();
-            }
-            else {
-                result = subResult.toString();
-            }
-            return string.replace("{calc(" + area + ")}", String.valueOf(result));
-        }
-        catch (ScriptException e) {
-            e.printStackTrace();
-            return "(\uc5d0\ub7ec,\ucf58\uc194 \ud655\uc778 \ubc14\ub78c)";
-        }
+        System.out.println("removed syntax, calc");
+        return string;
     }
 
     public String replaceRound(final String string) {
@@ -874,7 +1045,7 @@ public class MiniGame extends DataStore {
         if (area == null) {
             return string;
         }
-        final String result = String.valueOf(Math.round(Double.parseDouble(area)));
+        final String result = String.valueOf(FastMath.round(Double.parseDouble(area)));
         return string.replace("{round(" + area + ")}", result);
     }
 
@@ -883,7 +1054,7 @@ public class MiniGame extends DataStore {
         if (area == null) {
             return string;
         }
-        final String result = String.valueOf(Math.abs(Double.parseDouble(area)));
+        final String result = String.valueOf(FastMath.abs(Double.parseDouble(area)));
         return string.replace("{abs(" + area + ")}", result);
     }
 
@@ -892,7 +1063,7 @@ public class MiniGame extends DataStore {
         if (area == null) {
             return string;
         }
-        final String result = String.valueOf(Math.cos(Double.parseDouble(area)));
+        final String result = String.valueOf(FastMath.cos(Double.parseDouble(area)));
         return string.replace("{cos(" + area + ")}", result);
     }
 
@@ -901,7 +1072,7 @@ public class MiniGame extends DataStore {
         if (area == null) {
             return string;
         }
-        final String result = String.valueOf(Math.sin(Double.parseDouble(area)));
+        final String result = String.valueOf(FastMath.sin(Double.parseDouble(area)));
         return string.replace("{sin(" + area + ")}", result);
     }
 
@@ -910,7 +1081,7 @@ public class MiniGame extends DataStore {
         if (area == null) {
             return string;
         }
-        final String result = String.valueOf(Math.sin(Double.parseDouble(area)));
+        final String result = String.valueOf(FastMath.sin(Double.parseDouble(area)));
         return string.replace("{tan(" + area + ")}", result);
     }
 
@@ -919,7 +1090,7 @@ public class MiniGame extends DataStore {
         if (area == null) {
             return string;
         }
-        final String result = String.valueOf(Math.ceil(Double.parseDouble(area)));
+        final String result = String.valueOf(FastMath.ceil(Double.parseDouble(area)));
         return string.replace("{roundUp(" + area + ")}", result);
     }
 
@@ -928,7 +1099,7 @@ public class MiniGame extends DataStore {
         if (area == null) {
             return string;
         }
-        final String result = String.valueOf(Math.floor(Double.parseDouble(area)));
+        final String result = String.valueOf(FastMath.floor(Double.parseDouble(area)));
         return string.replace("{roundDown(" + area + ")}", result);
     }
 
@@ -1194,13 +1365,16 @@ public class MiniGame extends DataStore {
     public String replaceGameData(final String string) {
         return string
                 .replace("{maxPlayers}", String.valueOf(this.getMaxStartPlayers()))
-                .replace("{randomPlayer}", (this.playerList.size() == 1) ? this.playerList.get(0).getName() : (this.playerList.isEmpty() ? "none" : this.playerList.get(ThreadLocalRandom.current().nextInt(0, this.playerList.size() - 1)).getName()))
+                .replace("{randomPlayer}", (string.contains("{randomPlayer}") ?
+                        (this.playerList.size() == 1) ? this.playerList.get(0).getName() : (this.playerList.isEmpty() ? "none" : this.playerList.get(ThreadLocalRandom.current().nextInt(0, this.playerList.size() - 1)).getName())
+                : "none"))
                 .replace("{playerAmount}", String.valueOf(this.playerList.size()))
                 .replace("{playerSize}", String.valueOf(this.playerList.size()))
                 .replace("{isPlaying}", String.valueOf(this.isPlaying))
                 .replace("{isWaiting}", String.valueOf(this.isWaiting))
                 .replace("{game}", this.gameName)
                 .replace("{gameType}", (this.getGameType() == null) ? "none" : this.getGameType())
+                .replace("{randomNumber}", string.contains("{randomNumber}") ? String.valueOf(FastMath.random()) : "none")
                 .replace("{gameName}", this.gameName);
     }
     
@@ -1211,6 +1385,7 @@ public class MiniGame extends DataStore {
         int lastIndex = sum.indexOf(")}");
         if (lastIndex == -1) return null;
         return sum.substring(func.length(), lastIndex);
+
     }
 
     public String replaceCalcAll(String string, final Player player) {
@@ -1244,6 +1419,10 @@ public class MiniGame extends DataStore {
                 }
                 case "topLoc": {
                     string = this.replaceTopLoc(string);
+                    continue;
+                }
+                case "softContain": {
+                    string = this.replaceSoftContain(string);
                     continue;
                 }
                 case "contain": {
@@ -1322,6 +1501,13 @@ public class MiniGame extends DataStore {
                     string = this.replaceData(string);
                     continue;
                 }
+                case "hasPerm": {
+                    if (player != null) {
+                        string = this.replaceHasPerm(string, player);
+                        continue;
+                    }
+                    continue;
+                }
                 case "playerData": {
                     if (player != null) {
                         string = getPlayerData(player).replaceData(string);
@@ -1332,6 +1518,27 @@ public class MiniGame extends DataStore {
                 case "playerTargetBlock": {
                     if (player != null) {
                         string = this.replaceTargetBlock(string, player);
+                        continue;
+                    }
+                    continue;
+                }
+                case "playerTargetEntity": {
+                    if (player != null) {
+                        string = this.replaceTargetEntity(string, player);
+                        continue;
+                    }
+                    continue;
+                }
+                case "itemType": {
+                    if (player != null) {
+                        string = this.replaceItemType(string, player);
+                        continue;
+                    }
+                    continue;
+                }
+                case "itemAmount": {
+                    if (player != null) {
+                        string = this.replaceItemAmount(string, player);
                         continue;
                     }
                     continue;
@@ -1397,6 +1604,9 @@ public class MiniGame extends DataStore {
                     .replace("{x}", String.valueOf(player.getLocation().getX()))
                     .replace("{y}", String.valueOf(player.getLocation().getY()))
                     .replace("{z}", String.valueOf(player.getLocation().getZ()))
+                    .replace("{footX}", String.valueOf(player.getLocation().getX()))
+                    .replace("{footY}", String.valueOf(player.getLocation().getY()))
+                    .replace("{footZ}", String.valueOf(player.getLocation().getZ()))
                     .replace("{eyeX}", String.valueOf(player.getEyeLocation().getX()))
                     .replace("{eyeY}", String.valueOf(player.getEyeLocation().getY()))
                     .replace("{eyeZ}", String.valueOf(player.getEyeLocation().getZ()))
@@ -1406,21 +1616,22 @@ public class MiniGame extends DataStore {
                     .replace("{allPlayer}", player.getName())
                     .replace("{onlinePlayer}", player.getName())
                     .replace("{playerName}", player.getName())
-                    .replace("{playerItemSlot}", String.valueOf(player.getInventory().getHeldItemSlot()))
+                    .replace("{playerCursor}", String.valueOf(player.getInventory().getHeldItemSlot()))
                     .replace("{playerIndex}", String.valueOf(this.playerList.indexOf(player)))
                     .replace("{playerHealth}", String.valueOf(player.getHealth()))
-                    .replace("{playerFood}", String.valueOf(player.getFoodLevel()))
+                    .replace("{playerGameMode}", player.getGameMode().name())
+                    .replace("{playerIsBlocking}", string.contains("{playerIsBlocking}") ? String.valueOf(player.isHandRaised()) : "none")
+                    .replace("{playerIsLeashed}", string.contains("{playerIsLeashed}") ? String.valueOf(player.isLeashed()) : "none")
+                    .replace("{playerIsSneaking}", string.contains("{playerIsSneaking}") ? String.valueOf(player.isSneaking()) : "none")
+                    .replace("{playerIsGliding}", string.contains("{playerIsGliding}") ? String.valueOf(player.isGliding()) : "none")
+                    .replace("{playerIsSwimming}", string.contains("{playerIsSwimming}") ? String.valueOf(player.isSwimming()) : "none")
+                    .replace("{playerIsSleeping}", string.contains("{playerIsSleeping}") ? String.valueOf(player.isSleeping()) : "none")
+                    .replace("{playerFood}",  string.contains("{playerFood}") ?String.valueOf(player.getFoodLevel()) : "none")
                     .replace("{player}", player.getName())
-                    .replace("{playerExp}", String.valueOf(player.getTotalExperience()));
+                    .replace("{playerExp}", string.contains("{playerExp}") ? String.valueOf(player.getTotalExperience()) : "none");
         }
         else if (this.playerList.isEmpty()) {
             string = string.replace("{allPlayer}", "none").replace("{playerName}", "none").replace("{playerIndex}", "none").replace("{player}", "none");
-            if (string.contains("{playerMode}")) {
-                string = string.replace("{playerMode}", "none");
-            }
-            if (string.contains("{realPlayerMode}")) {
-                string = string.replace("{realPlayerMode}", "none");
-            }
         }
         else {
             string = string.replace("{allPlayer}", this.playerList.get(0).getName()).replace("{playerName}", this.playerList.get(0).getName()).replace("{playerIndex}", "0").replace("{player}", this.playerList.get(0).getName());

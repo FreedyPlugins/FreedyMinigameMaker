@@ -2,11 +2,9 @@ package freedy.freedyminigamemaker.events;
 
 import freedy.freedyminigamemaker.FreedyMinigameMaker;
 import freedy.freedyminigamemaker.MiniGames;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
 import java.util.ArrayList;

@@ -1,9 +1,7 @@
-// 
-// Decompiled by Procyon v0.5.36
-// 
-
 package freedy.freedyminigamemaker;
 
+import org.apache.commons.lang.StringUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.HashMap;
@@ -16,17 +14,30 @@ public class MiniGames
     public MiniGame noneGame;
     public static FileStore fileStore;
     public static FileStore settings;
+    public static FileStore items;
 
     public MiniGames(final FreedyMinigameMaker plugin) {
         fileStore = new FileStore(plugin, "data.yml");
         settings = new FileStore(plugin, "settings.yml");
+        items = new FileStore(plugin, "items.yml");
         this.plugin = plugin;
         reset();
+        setupWE();
+    }
 
+    public void setupWE() {
+        final String version = StringUtils.substringBetween(Bukkit.getVersion(), "(MC: ", ")");
+        final String finalVersion = version.substring(0, StringUtils.lastIndexOfIgnoreCase(version, "."));
+        switch (finalVersion) {
+            case "1.12":
+                break;
+            case "1.16":
+                break;
+        }
     }
 
     public void reset(String gameName) {
-        this.miniGames.remove(gameName);
+        remove(gameName);
         add(gameName);
     }
 
@@ -90,5 +101,9 @@ public class MiniGames
 
     public FileStore getSettings() {
         return MiniGames.settings;
+    }
+
+    public FileStore getItems() {
+        return MiniGames.items;
     }
 }

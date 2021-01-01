@@ -1,28 +1,24 @@
-// 
-// Decompiled by Procyon v0.5.36
-// 
-
 package freedy.freedyminigamemaker.commands;
 
 import freedy.freedyminigamemaker.FreedyMinigameMaker;
 import freedy.freedyminigamemaker.MiniGame;
-import freedy.freedyminigamemaker.MiniGames;
-import freedy.freedyminigamemaker.WorldEditor;
+import freedy.freedyminigamemaker.*;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
-import org.apache.commons.lang.StringUtils;
 import org.bukkit.*;
-import org.bukkit.block.Bed;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.CommandBlock;
 import org.bukkit.boss.BarColor;
+import org.bukkit.command.BlockCommandSender;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scoreboard.Team;
@@ -30,32 +26,86 @@ import org.bukkit.util.Vector;
 
 import java.util.*;
 
-public class MinigameUtilities implements CommandExecutor
-{
+public class MinigameUtilities implements CommandExecutor {
+
     FreedyMinigameMaker plugin;
     MiniGames miniGames;
-    FreedyCommandSender newFreedyCommandSender = new FreedyCommandSender();
+    public static FreedyCommandSender newFreedyCommandSender;
     public MinigameUtilities(final FreedyMinigameMaker plugin) {
         this.plugin = plugin;
         this.miniGames = FreedyMinigameMaker.miniGames;
+        newFreedyCommandSender = new FreedyCommandSender();
     }
-    
-    public boolean onCommand(CommandSender sender, final Command command, final String label, final String[] args) {
+
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (sender.hasPermission("freedyminigamemaker.admin")) {
             if (args.length >= 2) {
                 Player player = Bukkit.getPlayer(args[0]);
                 MiniGame miniGame = this.miniGames.getJoined(player);
                 if (!(sender instanceof FreedyCommandSender)) {
-                    sender = newFreedyCommandSender;
+                    try {
+                        if (sender instanceof BlockCommandSender) {
+                            final BlockCommandSender blockCommandSender = (BlockCommandSender) sender;
+                            final Block commandBlock = blockCommandSender.getBlock();
+                            if (commandBlock.getType().equals(Material.COMMAND_BLOCK)) {
+                                final CommandBlock cmdBlock = (CommandBlock) commandBlock.getState();
+                                final Location locatinon = cmdBlock.getLocation();
+                                String p = "none";
+                                double closest = 5;
+                                for (Entity entity : locatinon.getWorld().getNearbyEntities(locatinon, 4, 4, 4)) {
+                                    if (entity instanceof Player) {
+                                        final double distance = entity.getLocation().distance(locatinon);
+                                        if (distance < closest) {
+                                            closest = distance;
+                                            p = ((Player) entity).getName();
+                                        }
+
+                                    }
+                                }
+
+                                Bukkit.dispatchCommand(newFreedyCommandSender, cmdBlock.getCommand()
+                                        .replace("@p", p));
+                                return true;
+                            }
+                        }
+                        sender = newFreedyCommandSender;
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
                 }
                 final String s = args[1];
                 switch (s) {
+                    case "saveInv": {
+                        if (args.length == 3) {
+                            player.updateInventory();
+                            List<ItemStack> itemStacks = new ArrayList<>();
+                            PlayerInventory inventory = player.getInventory();
+                            for (int i = 0; i < inventory.getSize(); i++) {
+                                itemStacks.add(inventory.getItem(i));
+                            }
+                            miniGame.saveInv(args[2], itemStacks);
+                            break;
+                        }
+                        player.sendMessage("§cHow to Use: /fut <player> saveInv <invName>");
+                        player.sendMessage("§cHow to Use: Store the Player's inventory");
+                        break;
+                    }
+                    case "loadInv": {
+                        if (args.length == 3) {
+                            miniGame.loadInv(player, args[2]);
+                            break;
+                        }
+                        player.sendMessage("§cHow to Use: /fut <player> loadInv <invName>");
+                        player.sendMessage("§cHow to Use: Overwrite the player's inventory with the inventory that was stored");
+                        break;
+                    }
                     case "gui": {
                         if (args.length == 3) {
                             miniGame.openGui(player, args[2]);
                             break;
                         }
-                        player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> gui <\uba54\ub274\uc774\ub984>");
+                        player.sendMessage("§cHow to Use: /fut <player> gui <\uba54\ub274\uc774\ub984>");
+                        player.sendMessage("§cHow to Use: Open a new inventory menu for each player in the participating mini-game");
                         break;
                     }
                     case "setGui": {
@@ -63,7 +113,8 @@ public class MinigameUtilities implements CommandExecutor
                             miniGame.setGui(player, this.replace(player, miniGame, args[2]), Integer.parseInt(args[3]), this.replace(player, miniGame, args[4]));
                             break;
                         }
-                        player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> setGui <invName> <index> <customItemName>");
+                        player.sendMessage("§cHow to Use: /fut <player> setGui <invName> <index> <customItemName>");
+                        player.sendMessage("§cHow to Use: Set the Player's Inventory Menu for a participating mini-game");
                         break;
                     }
                     case "resetGui": {
@@ -80,25 +131,30 @@ public class MinigameUtilities implements CommandExecutor
                                                 this.replace(player, miniGame, args[3]),
                                                 Integer.parseInt(this.replace(player, miniGame, args[4])),
                                                 this.replace(player, miniGame, message));
-                                    } else
-                                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> setGuiItem name <invName> <index> <itemName>");
+                                    } else {
+                                        player.sendMessage("§cHow to Use: /fut <player> setGuiItem name <invName> <index> <itemName>");
+                                        player.sendMessage("§cHow to Use: 참여중인 미니게임에 플레이어의 인벤토리메뉴를 설정하기");
+                                    }
                                     break;
                                 case "lore":
                                     //fut <player> setGuiItem name <invName> <index> <line> <loreName>
                                     if (args.length >= 7) {
-                                        String message = String.join(" ", Arrays.copyOfRange(args, 6, args.length));                            final String s3 = args[2];
+                                        String message = String.join(" ", Arrays.copyOfRange(args, 6, args.length));
+                                        final String s3 = args[2];
 
                                         miniGame.setGuiItemLore(player,
                                                 this.replace(player, miniGame, args[3]),
                                                 Integer.parseInt(this.replace(player, miniGame, args[4])),
                                                 Integer.parseInt(this.replace(player, miniGame, args[5])),
                                                 this.replace(player, miniGame, message));
-                                    } else
-                                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> setGuiItem name <invName> <index> <line> <loreName>");
+                                    } else {
+                                        player.sendMessage("§cHow to Use: /fut <player> setGuiItem name <invName> <index> <line> <loreName>");
+                                        player.sendMessage("§cHow to Use: 참여중인 미니게임에 플레이어의 인벤토리메뉴를 설정하기");
+                                    }
                                     break;
                             }
                             break;
-                        } else player.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> setGuiItem <name|lore> ...");
+                        } else player.sendMessage("§cHow to Use: /fut <player> setGuiItem <name|lore> ...");
                         break;
                     }
                     case "teleport": {
@@ -137,7 +193,22 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> teleport <private|game> <\ubbf8\ub2c8\uac8c\uc784> <\uc800\uc7a5\ub41c\uc704\uce58>");
+                        player.sendMessage("§cHow to Use: /fut <player> teleport <private|game> <\ubbf8\ub2c8\uac8c\uc784> <\uc800\uc7a5\ub41c\uc704\uce58>");
+                        player.sendMessage("§cHow to Use: Teleport the Player to a location stored in a mini-game ");
+                        break;
+                    }
+                    case "head": {
+                        if (args.length == 4) {
+                            Location location = player.getLocation();
+                            location.setYaw(Float.parseFloat(args[2]));
+                            location.setPitch(Float.parseFloat(args[3]));
+                            player.teleport(location);
+                            player.teleport(player);
+
+                            break;
+                        }
+                        player.sendMessage("§cHow to Use: /fut <player> head <yaw> <pitch>");
+                        player.sendMessage("§cHow to Use: Set direction of the player ");
                         break;
                     }
                     case "tp": {
@@ -161,7 +232,8 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> tp <world> <x> <y> <z> [yaw] [pitch]");
+                        player.sendMessage("§cHow to Use: /fut <player> tp <world> <x> <y> <z> [yaw] [pitch]");
+                        player.sendMessage("§cHow to Use: Teleport the player to a coordinate");
                         break;
                     }
                     case "sendMsg": {
@@ -186,8 +258,8 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> sendMsg <public|private|team|game> <\uba54\uc0c8\uc9c0>");
-                        sender.sendMessage("§c\ucc38\uace0: <\uba85\ub839\uc904> \uc785\ub825\ub780\uc5d0\ub294 \uacf5\ubc31\uc744 {spc}\uc73c\ub85c \ub123\uc73c\uc138\uc694");
+                        player.sendMessage("§cHow to Use: /fut <player> sendMsg <public|private|team|game> <\uba54\uc0c8\uc9c0>");
+                        player.sendMessage("§cHow to Use: Send a message to the player or player");
                         break;
                     }
                     case "sendJson": {
@@ -237,13 +309,14 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> sendJson <public|private|team|game> <eventType>, <eventText>, <hover>, <message>-<jsonMessage>-<message>");
-                        sender.sendMessage("§c\ucc38\uace0: <\uba85\ub839\uc904> \uc785\ub825\ub780\uc5d0\ub294 \uacf5\ubc31\uc744 {spc}\uc73c\ub85c \ub123\uc73c\uc138\uc694");
+                        player.sendMessage("§cHow to Use: /fut <player> sendJson <public|private|team|game> <eventType>, <eventText>, <hover>, <message>-<jsonMessage>-<message>");
+                        player.sendMessage("§cHow to Use: Send a Jason message to the player or player");
                         break;
                     }
                     case "sendActionBar": {
                         if (args.length >= 4) {
-                            String message = String.join(" ", Arrays.copyOfRange(args, 3, args.length));                            final String s3 = args[2];
+                            String message = String.join(" ", Arrays.copyOfRange(args, 3, args.length));
+                            final String s3 = args[2];
                             final String s4 = args[2];
                             switch (s4) {
                                 case "public": {
@@ -265,8 +338,8 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> sendActionBar <public|private|team|game> <\uc5d1\uc158\ubc14\ub9e4\uc138\uc9c0>");
-                        sender.sendMessage("§c\ucc38\uace0: <\uba85\ub839\uc904> \uc785\ub825\ub780\uc5d0\ub294 \uacf5\ubc31\uc744 {spc}\uc73c\ub85c \ub123\uc73c\uc138\uc694");
+                        player.sendMessage("§cHow to Use: /fut <player> sendActionBar <public|private|team|game> <\uc5d1\uc158\ubc14\ub9e4\uc138\uc9c0>");
+                        player.sendMessage("§cHow to Use: Send an article bar message to the player or player");
                         break;
                     }
                     case "sendTitle": {
@@ -294,8 +367,8 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> sendTitle <public|private|team|game> <fadeIn> <stay> <fadeOut> <\uc81c\ubaa9-\ubd80\uc81c\ubaa9>");
-                        sender.sendMessage("§c\ucc38\uace0: <\uba85\ub839\uc904> \uc785\ub825\ub780\uc5d0\ub294 \uacf5\ubc31\uc744 {spc}\uc73c\ub85c \ub123\uc73c\uc138\uc694");
+                        player.sendMessage("§cHow to Use: /fut <player> sendTitle <public|private|team|game> <fadeIn> <stay> <fadeOut> <\uc81c\ubaa9-\ubd80\uc81c\ubaa9>");
+                        player.sendMessage("§cHow to Use: Send title messages to players or players");
                         break;
                     }
                     case "sendBossBar": {
@@ -323,8 +396,9 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> sendBossBar <public|private|team|game> <barName> <progress> <color> <message>");
-                        sender.sendMessage("§c" + "color list: BLUE GREEN PINK PURPLE RED WHITE YELLOW");
+                        player.sendMessage("§cHow to Use: /fut <player> sendBossBar <public|private|team|game> <barName> <progress> <color> <message|none>");
+                        player.sendMessage("§cHow to Use: Floating boss bars to players or players");
+                        player.sendMessage("§c" + "color list: BLUE GREEN PINK PURPLE RED WHITE YELLOW");
                         break;
                     }
                     case "sendSound": {
@@ -350,8 +424,9 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> sendSound <public|private|team|game> <sound> <volume> <pitch>");
-                        sender.sendMessage("\uc0ac\uc6b4\ub4dc\ubaa9\ub85d: https://helpch.at/docs/1.12.2/org/bukkit/Sound.html");
+                        player.sendMessage("§cHow to Use: /fut <player> sendSound <public|private|team|game> <sound> <volume> <pitch>");
+                        player.sendMessage("§cHow to Use: Play sound to the player or player");
+                        player.sendMessage("\uc0ac\uc6b4\ub4dc\ubaa9\ub85d: https://helpch.at/docs/1.12.2/org/bukkit/Sound.html");
                         break;
                     }
                     case "gameMode": {
@@ -371,8 +446,9 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> gamemode <private|team|game> <\uac8c\uc784\ubaa8\ub4dc>");
-                        sender.sendMessage("§c\uac8c\uc784\ubaa8\ub4dc\ub294 \ubaa8\ub450 \uc601\uc5b4 \ub300\ubb38\uc790\ub85c \uc368\uc8fc\uc138\uc694");
+                        player.sendMessage("§cHow to Use: /fut <player> gamemode <private|team|game> <\uac8c\uc784\ubaa8\ub4dc>");
+                        player.sendMessage("§cHow to Use: Set the Player or Player's Game Mode");
+                        player.sendMessage("§cPlease write all the game modes in English capital letters.");
                         break;
                     }
                     case "hide": {
@@ -399,7 +475,8 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> hide <private|public|game> <player>");
+                        player.sendMessage("§cHow to Use: /fut <player> hide <private|public|game> <player>");
+                        player.sendMessage("§cHow to Use: Hide a player or player from a player");
                         break;
                     }
                     case "show": {
@@ -426,7 +503,8 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> show <private|public|game> <player>");
+                        player.sendMessage("§cHow to Use: /fut <player> show <private|public|game> <player>");
+                        player.sendMessage("§cHow to Use: Show a player or player what kind of player");
                         break;
                     }
                     case "health": {
@@ -446,7 +524,8 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> health <private|team|game> <health>");
+                        player.sendMessage("§cHow to Use: /fut <player> health <private|team|game> <health>");
+                        player.sendMessage("§cHow to Use: To set a player's or player's physical strength");
                         break;
                     }
                     case "food": {
@@ -466,52 +545,45 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> food <private|team|game> <foodLevel>");
+                        player.sendMessage("§cHow to Use: /fut <player> food <private|team|game> <foodLevel>");
+                        player.sendMessage("§cHow to Use: Set the hunger of the player or players");
                         break;
                     }
                     case "addPotion": {
-                        if (args.length == 7) {
+                        if (args.length >= 6) {
                             final PotionEffect potionEffect = new PotionEffect(PotionEffectType.getByName(args[3]), Integer.parseInt(args[4]), Integer.parseInt(args[5]));
                             final String s8 = args[2];
                             switch (s8) {
                                 case "private": {
-                                    player.addPotionEffect(potionEffect, Boolean.parseBoolean(args[6]));
+                                    player.addPotionEffect(potionEffect);
                                     break;
                                 }
                                 case "game": {
                                     for (final Player p2 : miniGame.playerList) {
-                                        p2.addPotionEffect(potionEffect, Boolean.parseBoolean(args[6]));
+                                        p2.addPotionEffect(potionEffect);
                                     }
                                     break;
                                 }
                             }
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> addPotion <private|team|game> <\ud3ec\uc158\uc774\ub984> <\uc9c0\uc18d\uc2dc\uac04> <\uc99d\ud3ed> <\uc785\uc790\uc228\uae40\uc5ec\ubd80>");
+                        player.sendMessage("§cHow to Use: /fut <player> addPotion <private|game> <potionName> <duration> <amplification>");
+                        player.sendMessage("§cHow to Use: Give the Player or Player a Potion Effect");
                         break;
                     }
                     case "removePotion": {
                         if (args.length == 3) {
                             final String s9 = args[2];
-                            switch (s9) {
-                                case "private": {
-                                    for (final PotionEffect effect : player.getActivePotionEffects()) {
-                                        player.removePotionEffect(effect.getType());
-                                    }
-                                    break;
-                                }
-                                case "game": {
-                                    for (final Player p7 : miniGame.playerList) {
-                                        for (final PotionEffect effect3 : p7.getActivePotionEffects()) {
-                                            p7.removePotionEffect(effect3.getType());
-                                        }
-                                    }
-                                    break;
-                                }
+                            player.removePotionEffect(PotionEffectType.getByName(s9));
+                            break;
+                        } else if (args.length == 2) {
+                            for (final PotionEffect effect : player.getActivePotionEffects()) {
+                                player.removePotionEffect(effect.getType());
                             }
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> removePotion <private|team|game>");
+                        player.sendMessage("§cHow to Use: /fut <player> removePotion <potion>");
+                        player.sendMessage("§cHow to Use: To remove a player or player's port effect");
                         break;
                     }
                     case "kit": {
@@ -519,7 +591,8 @@ public class MinigameUtilities implements CommandExecutor
                             this.miniGames.getNoneGame().applyKit(player, this.replace(player, miniGame, args[2]));
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> kit <\ud0b7\uc774\ub984>");
+                        player.sendMessage("§cHow to Use: /fut <player> kit <\ud0b7\uc774\ub984>");
+                        player.sendMessage("§cHow to Use: To apply a saved kit to the player");
                         break;
                     }
                     case "openGui": {
@@ -527,7 +600,8 @@ public class MinigameUtilities implements CommandExecutor
                             this.miniGames.getNoneGame().openInv(player, this.replace(player, miniGame, args[2]));
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> openGui <\uba54\ub274\uc774\ub984>");
+                        player.sendMessage("§cHow to Use: /fut <player> openGui <\uba54\ub274\uc774\ub984>");
+                        player.sendMessage("§cHow to Use: Open a saved GUI menu");
                         break;
                     }
                     case "closeGui": {
@@ -545,7 +619,8 @@ public class MinigameUtilities implements CommandExecutor
 
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> addToTeam <team>");
+                        player.sendMessage("§cHow to Use: /fut <player> addToTeam <team>");
+                        player.sendMessage("§cHow to Use: To add a player to the scoreboard team");
                         break;
                     }
                     case "setWeather": {
@@ -553,7 +628,8 @@ public class MinigameUtilities implements CommandExecutor
                             player.setPlayerWeather(WeatherType.valueOf(args[2]));
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> setWeather <weatherType>");
+                        player.sendMessage("§cHow to Use: /fut <player> setWeather <weatherType>");
+                        player.sendMessage("§cHow to Use: Set personal weather for players CLEAR, DOWNFALL");
                         break;
                     }
                     case "resetWeather": {
@@ -565,7 +641,9 @@ public class MinigameUtilities implements CommandExecutor
                             player.setPlayerTime(Long.parseLong(args[2]), true);
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> setTime <timeTick>");
+                        player.sendMessage("§cHow to Use: /fut <player> setTime <timeTick>");
+                        player.sendMessage("§cHow to Use: Set player's personal time");
+
                         break;
                     }
                     case "resetTime": {
@@ -585,7 +663,8 @@ public class MinigameUtilities implements CommandExecutor
                                 chunk.load();
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> loadChunk <world> <x> <z>");
+                        player.sendMessage("§cHow to Use: /fut <player> loadChunk <world> <x> <z>");
+                        player.sendMessage("§cHow to Use: Load chunk");
                         break;
                     }
                     case "regenChunk": {
@@ -593,7 +672,9 @@ public class MinigameUtilities implements CommandExecutor
                             Bukkit.getWorld(args[2]).regenerateChunk(Integer.parseInt(args[3]), Integer.parseInt(args[4]));
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> regenChunk <world> <x> <z>");
+                        player.sendMessage("§cHow to Use: /fut <player> regenChunk <world> <x> <z>");
+                        player.sendMessage("§cHow to Use: Regen chunk");
+
                         break;
                     }
                     case "fakeBlock": {
@@ -607,7 +688,8 @@ public class MinigameUtilities implements CommandExecutor
 
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> fakeBlock <world> <x> <y> <z> <block>");
+                        player.sendMessage("§cHow to Use: /fut <player> fakeBlock <world> <x> <y> <z> <block>");
+                        player.sendMessage("§cHow to Use: Install blocks that are visible only to players");
                         break;
                     }
                     case "join": {
@@ -616,7 +698,8 @@ public class MinigameUtilities implements CommandExecutor
                             mg.add(player);
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> join <\uac8c\uc784\uc774\ub984>");
+                        player.sendMessage("§cHow to Use: /fut <player> join <\uac8c\uc784\uc774\ub984>");
+                        player.sendMessage("§cHow to Use: Getting players involved in mini-games");
                         break;
                     }
                     case "joinAll": {
@@ -628,7 +711,8 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> joinAll <\uac8c\uc784\uc774\ub984>");
+                        player.sendMessage("§cHow to Use: /fut <player> joinAll <\uac8c\uc784\uc774\ub984>");
+                        player.sendMessage("§cHow to Use: Get all online players who are not participating in a mini game to participate in a mini game");
                         break;
                     }
                     case "knockBack": {
@@ -636,7 +720,8 @@ public class MinigameUtilities implements CommandExecutor
                             player.setVelocity(new Vector(Double.parseDouble(args[2]), Double.parseDouble(args[3]), Double.parseDouble(args[4])));
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> knockBack <x> <y> <z>");
+                        player.sendMessage("§cHow to Use: /fut <player> knockBack <x> <y> <z>");
+                        player.sendMessage("§cHow to Use: Give the player momentum");
                         break;
                     }
                     case "entityKnockBack": {
@@ -644,7 +729,8 @@ public class MinigameUtilities implements CommandExecutor
                             Bukkit.getEntity(UUID.fromString(args[2])).setVelocity(new Vector(Double.parseDouble(args[3]), Double.parseDouble(args[4]), Double.parseDouble(args[5])));
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> entityKnockBack <entityUuid> <x> <y> <z>");
+                        player.sendMessage("§cHow to Use: /fut <player> entityKnockBack <entityUuid> <x> <y> <z>");
+                        player.sendMessage("§cHow to Use: Give the entity momentum");
                         break;
                     }
                     case "addKnockBack": {
@@ -655,7 +741,8 @@ public class MinigameUtilities implements CommandExecutor
                             player.setVelocity(location.getDirection().multiply(Double.parseDouble(args[2])));
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> addKnockBack <amount> <yaw> <pitch>");
+                        player.sendMessage("§cHow to Use: /fut <player> addKnockBack <amount> <yaw> <pitch>");
+                        player.sendMessage("§cHow to Use: Cycle the propulsion in the direction of the amount");
                         break;
                     }
                     case "entityAddKnockBack": {
@@ -666,15 +753,21 @@ public class MinigameUtilities implements CommandExecutor
                             Bukkit.getEntity(UUID.fromString(args[2])).setVelocity(location.getDirection().multiply(Double.parseDouble(args[3])));
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> entityAddKnockBack <entityUuid> <amount> <yaw> <pitch>");
+                        player.sendMessage("§cHow to Use: /fut <player> entityAddKnockBack <entityUuid> <amount> <yaw> <pitch>");
+                        player.sendMessage("§cHow to Use: Gives the entity a boost in the direction of an amount");
+
                         break;
                     }
                     case "giveHand": {
                         if (args.length == 3) {
                             this.miniGames.getNoneGame().giveItemHand(player, this.replace(player, miniGame, args[2]));
                             break;
+                        } else if (args.length == 4) {
+                            this.miniGames.getNoneGame().giveItemHand(player, this.replace(player, miniGame, args[2]), Integer.parseInt(args[3]));
+                            break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> giveHand <customItem>");
+                        player.sendMessage("§cHow to Use: /fut <player> giveHand <customItem> [amount]");
+                        player.sendMessage("§cHow to Use: Give items stored in the player's hand");
                         break;
                     }
                     case "giveCursor": {
@@ -686,7 +779,8 @@ public class MinigameUtilities implements CommandExecutor
                             this.miniGames.getNoneGame().giveItemCursor(player, this.replace(player, miniGame, args[2]), Integer.parseInt(args[3]), Integer.parseInt(args[4]));
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> giveHand <customItem> <cursor> [amount]");
+                        player.sendMessage("§cHow to Use: /fut <player> giveCursor <customItem> <cursor> [amount]");
+                        player.sendMessage("§cHow to Use: Cursor Stored Item Cycle");
                         break;
                     }
                     case "setHelmet": {
@@ -694,7 +788,8 @@ public class MinigameUtilities implements CommandExecutor
                             this.miniGames.getNoneGame().setHelmet(player, this.replace(player, miniGame, args[2]));
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> setHelmet <customItem>");
+                        player.sendMessage("§cHow to Use: /fut <player> setHelmet <customItem>");
+                        player.sendMessage("§cHow to Use: Overlay items stored on the player's head");
                         break;
                     }
                     case "setChestplate": {
@@ -702,7 +797,8 @@ public class MinigameUtilities implements CommandExecutor
                             this.miniGames.getNoneGame().setChestplate(player, this.replace(player, miniGame, args[2]));
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> setChestplate <customItem>");
+                        player.sendMessage("§cHow to Use: /fut <player> setChestplate <customItem>");
+                        player.sendMessage("§cHow to Use: Overlay items stored on the player's upper body");
                         break;
                     }
                     case "setLeggings": {
@@ -710,7 +806,8 @@ public class MinigameUtilities implements CommandExecutor
                             this.miniGames.getNoneGame().setLeggings(player, this.replace(player, miniGame, args[2]));
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> setLeggings <customItem>");
+                        player.sendMessage("§cHow to Use: /fut <player> setLeggings <customItem>");
+                        player.sendMessage("§cHow to Use: Wrap items stored on the player's pants");
                         break;
                     }
                     case "setBoots": {
@@ -718,7 +815,8 @@ public class MinigameUtilities implements CommandExecutor
                             this.miniGames.getNoneGame().setBoots(player, this.replace(player, miniGame, args[2]));
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> setBoots <customItem>");
+                        player.sendMessage("§cHow to Use: /fut <player> setBoots <customItem>");
+                        player.sendMessage("§cHow to Use: Covering items stored on the player's feet");
                         break;
                     }
                     case "cursor": {
@@ -726,7 +824,8 @@ public class MinigameUtilities implements CommandExecutor
                             player.getInventory().setHeldItemSlot(Integer.parseInt(args[2]));
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> cursor <cursor>");
+                        player.sendMessage("§cHow to Use: /fut <player> cursor <cursor>");
+                        player.sendMessage("§cHow to Use: Replace the player's cursor");
                         break;
                     }
                     case "kill": {
@@ -734,7 +833,8 @@ public class MinigameUtilities implements CommandExecutor
                             Bukkit.getEntity(UUID.fromString(args[2])).remove();
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> kill <entityUuid>");
+                        player.sendMessage("§cHow to Use: /fut <player> kill <entityUuid>");
+                        player.sendMessage("§cHow to Use: Remove an entity completely");
                         break;
                     }
                     case "damage": {
@@ -745,7 +845,8 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> damage <entityUuid> <damage>");
+                        player.sendMessage("§cHow to Use: /fut <player> damage <entityUuid> <damage>");
+                        player.sendMessage("§cHow to Use: Damage to entities");
                         break;
                     }
                     case "kick": {
@@ -770,24 +871,21 @@ public class MinigameUtilities implements CommandExecutor
                             miniGame.stop();
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> move <\uac8c\uc784\uc774\ub984>");
+                        player.sendMessage("§cHow to Use: /fut <player> move <\uac8c\uc784\uc774\ub984>");
+                        player.sendMessage("§cHow to Use: Moving the Player to a Mini Game");
                         break;
                     }
                     case "if": {
                         if (args.length >= 6) {
-                            final boolean result = this.checkIf(player, miniGame, args);
-                            String message2 = String.join(" ", Arrays.copyOfRange(args, 5, args.length));
-                            final String elseCmd = StringUtils.substringBetween(message2, "{else(", ")}");
-                            final String doCmd = StringUtils.substringBetween(message2, "{do(", ")}");
-                            String secondCmd = message2
-                                    .replace("{else(" + elseCmd + ")}", "")
-                                    .replace("{do(" + doCmd + ")}", "");
 
+                            String message2 = String.join(" ", Arrays.copyOfRange(args, 5, args.length));
+                            message2 = this.replace(player, miniGame, message2);
+                            final String elseCmd = MiniGame.getSubFunc(message2, "{else(");
+                            message2 = message2.replace("{else(" + elseCmd + ")}", "");
+                            final String doCmd = MiniGame.getSubFunc(message2, "{do(");
+                            message2 = message2.replace("{do(" + doCmd + ")}", "");
+                            final boolean result = this.checkIf(args[2], args[4], args[3]);
                             if (result) {
-                                if (!(secondCmd.equals("") || secondCmd.equals(" "))) {
-                                    miniGame.executeCommand((FreedyCommandSender) sender, message2, player);
-                                    break;
-                                }
                                 if (doCmd != null) {
                                     final String[] split = doCmd.split(" && ");
                                     for (String cmd : split) {
@@ -795,8 +893,9 @@ public class MinigameUtilities implements CommandExecutor
                                             return true;
                                     }
                                 }
+                                miniGame.executeCommand((FreedyCommandSender) sender, message2, player);
 
-                            } else if (elseCmd != null && (secondCmd.equals("") || secondCmd.equals(" "))) {
+                            } else if (elseCmd != null) {
                                 final String[] split2 = elseCmd.split(" && ");
                                 for (String cmd : split2) {
                                     if (miniGame.executeCommand((FreedyCommandSender) sender, cmd, player).equals("false"))
@@ -807,18 +906,19 @@ public class MinigameUtilities implements CommandExecutor
 
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> if <value1> <==|/=|>|>=|<|<=> <value2> <cmdLine>");
+                        player.sendMessage("§cHow to Use: /fut <player> if <value1> <==|/=|>|>=|<|<=> <value2> <cmdLine>");
                         break;
                     }
                     case "while": {
                         if (args.length >= 6) {
+
                             String message = String.join(" ", Arrays.copyOfRange(args, 5, args.length));
-                            int index = StringUtils.lastIndexOfIgnoreCase(message, "{do(");
-                            int lastIndex = StringUtils.indexOfIgnoreCase(message, ")}");
-                            String string = message.substring(index, lastIndex);
-                            final String doCmd2 = StringUtils.substringBetween(message, "{do(", ")}");
-                            String secondCmd2 = message.replace("{do(" + doCmd2 + ")}", "");
-                            while (this.checkIf(player, miniGame, args)) {
+                            message = this.replace(player, miniGame, message);
+
+                            final String doCmd2 = MiniGame.getSubFunc(message, "{do(");
+                            message = message.replace("{do(" + doCmd2 + ")}", "");
+
+                            while (this.checkIf(args[2], args[4], args[3])) {
                                 if (doCmd2 != null) {
                                     final String[] split3 = doCmd2.split(" && ");
                                     for (final String cmd2 : split3) {
@@ -828,13 +928,10 @@ public class MinigameUtilities implements CommandExecutor
                                     }
                                 }
                             }
-                            if (!secondCmd2.equals("")) {
-                                miniGame.executeCommand((FreedyCommandSender) sender, secondCmd2, player);
-
-                            }
+                            miniGame.executeCommand((FreedyCommandSender) sender, message, player);
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> while <value1> <==|/=|>|>=|<|<=> <value2> <cmdLine>");
+                        player.sendMessage("§cHow to Use: /fut <player> while <value1> <==|/=|>|>=|<|<=> <value2> <cmdLine>");
                         break;
                     }
                     case "do": {
@@ -857,7 +954,7 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> do <cmdBundle> dataName, data");
+                        player.sendMessage("§cHow to Use: /fut <player> do <cmdBundle> [dataName, data]");
                         break;
                     }
                     case "execute": {
@@ -866,7 +963,8 @@ public class MinigameUtilities implements CommandExecutor
                             Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), this.replace(player, miniGame, message));
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> execute <cmdLine>");
+                        player.sendMessage("§cHow to Use: /fut <player> execute <cmdLine>");
+                        player.sendMessage("§cHow to Use: Run the vanilla command from the console");
                         break;
                     }
                     case "executeCmd": {
@@ -875,7 +973,8 @@ public class MinigameUtilities implements CommandExecutor
                             player.performCommand(message);
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> executeCmd <cmdLine>");
+                        player.sendMessage("§cHow to Use: /fut <player> executeCmd <cmdLine>");
+                        player.sendMessage("§cHow to Use: Allow the Player to execute commands");
                         break;
                     }
                     case "executeDelayCmd": {
@@ -884,7 +983,8 @@ public class MinigameUtilities implements CommandExecutor
                             Bukkit.getScheduler().runTaskLater(this.plugin, () -> player.performCommand(message), Integer.parseInt(args[2]));
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> executeDelayCmd <delayTick> <cmdLine>");
+                        player.sendMessage("§cHow to Use: /fut <player> executeDelayCmd <delayTick> <cmdLine>");
+                        player.sendMessage("§cHow to Use: Allow the Player to execute the command after a few ticks");
                         break;
                     }
                     case "executeConCmd": {
@@ -894,7 +994,8 @@ public class MinigameUtilities implements CommandExecutor
 
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> executeConCmd <cmdLine>");
+                        player.sendMessage("§cHow to Use: /fut <player> executeConCmd <cmdLine>");
+                        player.sendMessage("§cHow to Use: Allow command to run from console");
                         break;
                     }
                     case "executeConDelayCmd": {
@@ -905,7 +1006,8 @@ public class MinigameUtilities implements CommandExecutor
                             else Bukkit.getScheduler().runTaskLater(this.plugin, () -> Bukkit.getServer().dispatchCommand(finalSender, message), Integer.parseInt(args[2])).getTaskId();
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> executeConDelayCmd <delayTick> <cmdLine>");
+                        player.sendMessage("§cHow to Use: /fut <player> executeConDelayCmd <delayTick> <cmdLine>");
+                        player.sendMessage("§cHow to Use: Allow a few ticks to run commands on the console");
                         break;
                     }
                     case "topTp": {
@@ -923,14 +1025,20 @@ public class MinigameUtilities implements CommandExecutor
                         break;
                     }
                     case "cancelAllDelayCmd": {
+                        miniGame.cancelAllTask();
                         break;
+
                     }
                     case "resetBlocks": {
-                        if (args.length >= 3) {
+                        if (args.length == 3) {
                             this.miniGames.get(args[2]).resetBlocks();
                             break;
+                        } else if (args.length == 4) {
+                            this.miniGames.get(args[2]).resetBlocks(args[3]);
+                            break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> resetBlocks <gameName>");
+                        player.sendMessage("§cHow to Use: /fut none resetBlocks <gameName> [blocksName]");
+                        player.sendMessage("§cHow to Use: If gameType is a build, initialize blocks installed or destroyed by the player except sand or gravel");
                         break;
                     }
                     case "setData": {
@@ -939,23 +1047,23 @@ public class MinigameUtilities implements CommandExecutor
                             if (miniGame != null) {
                                 miniGame.setCustomData(args[2], message5);
                             } else {
-                                sender.sendMessage("§c\ud50c\ub808\uc774\uc5b4\uac00 \ubbf8\ub2c8\uac8c\uc784\uc5d0 \ucc38\uc5ec \uc911\uc774\uc9c0 \uc54a\uae30 \ub54c\ubb38\uc5d0 \ub370\uc774\ud0c0\ub97c \uc800\uc7a5\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.");
+                                player.sendMessage("§c\ud50c\ub808\uc774\uc5b4\uac00 \ubbf8\ub2c8\uac8c\uc784\uc5d0 \ucc38\uc5ec \uc911\uc774\uc9c0 \uc54a\uae30 \ub54c\ubb38\uc5d0 \ub370\uc774\ud0c0\ub97c \uc800\uc7a5\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.");
                             }
                             break;
                         }
-                        sender.sendMessage("§c\uc0ac\uc6a9\ubc95: /fut <player> setData <customData> <data>");
+                        player.sendMessage("§cHow to Use: /fut <player> setData <customData> <data>");
                         break;
                     }
                     case "addData": {
                         if (args.length < 4) {
-                            sender.sendMessage("§cUsage: /fut <player> addData <customData> <amount>");
+                            player.sendMessage("§cUsage: /fut <player> addData <customData> <amount>");
                             break;
                         }
                         if (miniGame != null) {
                             miniGame.setCustomData(args[2], String.valueOf(Double.parseDouble(miniGame.getCustomData(args[2])) + Double.parseDouble(args[3])));
                             break;
                         }
-                        sender.sendMessage("§c\ud50c\ub808\uc774\uc5b4\uac00 \ubbf8\ub2c8\uac8c\uc784\uc5d0 \ucc38\uc5ec \uc911\uc774\uc9c0 \uc54a\uae30 \ub54c\ubb38\uc5d0 \ub370\uc774\ud0c0\ub97c \uc800\uc7a5\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.");
+                        player.sendMessage("§c\ud50c\ub808\uc774\uc5b4\uac00 \ubbf8\ub2c8\uac8c\uc784\uc5d0 \ucc38\uc5ec \uc911\uc774\uc9c0 \uc54a\uae30 \ub54c\ubb38\uc5d0 \ub370\uc774\ud0c0\ub97c \uc800\uc7a5\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.");
                         break;
                     }
                     case "setPlayerData": {
@@ -964,23 +1072,23 @@ public class MinigameUtilities implements CommandExecutor
                             if (miniGame != null) {
                                 miniGame.getPlayerData(player).setCustomData(args[2], message5);
                             } else {
-                                sender.sendMessage("§c\ud50c\ub808\uc774\uc5b4\uac00 \ubbf8\ub2c8\uac8c\uc784\uc5d0 \ucc38\uc5ec \uc911\uc774\uc9c0 \uc54a\uae30 \ub54c\ubb38\uc5d0 \ub370\uc774\ud0c0\ub97c \uc800\uc7a5\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.");
+                                player.sendMessage("§c\ud50c\ub808\uc774\uc5b4\uac00 \ubbf8\ub2c8\uac8c\uc784\uc5d0 \ucc38\uc5ec \uc911\uc774\uc9c0 \uc54a\uae30 \ub54c\ubb38\uc5d0 \ub370\uc774\ud0c0\ub97c \uc800\uc7a5\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.");
                             }
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> setPlayerData <customData> <data>");
+                        player.sendMessage("§cUsage: /fut <player> setPlayerData <customData> <data>");
                         break;
                     }
                     case "addPlayerData": {
                         if (args.length < 4) {
-                            sender.sendMessage("§cUsage: /fut <player> addPlayerData <customData> <amount>");
+                            player.sendMessage("§cUsage: /fut <player> addPlayerData <customData> <amount>");
                             break;
                         }
                         if (miniGame != null) {
                             miniGame.getPlayerData(player).setCustomData(args[2], String.valueOf(Double.parseDouble(miniGame.getPlayerData(player).getCustomData(args[2])) + Double.parseDouble(args[3])));
                             break;
                         }
-                        sender.sendMessage("§c\ud50c\ub808\uc774\uc5b4\uac00 \ubbf8\ub2c8\uac8c\uc784\uc5d0 \ucc38\uc5ec \uc911\uc774\uc9c0 \uc54a\uae30 \ub54c\ubb38\uc5d0 \ub370\uc774\ud0c0\ub97c \uc800\uc7a5\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.");
+                        player.sendMessage("§c\ud50c\ub808\uc774\uc5b4\uac00 \ubbf8\ub2c8\uac8c\uc784\uc5d0 \ucc38\uc5ec \uc911\uc774\uc9c0 \uc54a\uae30 \ub54c\ubb38\uc5d0 \ub370\uc774\ud0c0\ub97c \uc800\uc7a5\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4.");
                         break;
                     }
                     case "setBlockWE": {
@@ -996,10 +1104,10 @@ public class MinigameUtilities implements CommandExecutor
                             block.setType(blockType);
                             block.getState().update();
                             */
-                            new WorldEditor().setBlockWE(args);
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> setBlock <world> <x> <y> <z> <blockCode> [blockData]");
+                        player.sendMessage("§cUsage: /fut <player> setBlockWE <world> <x> <y> <z> <blockCode> [blockData]");
+                        player.sendMessage("§cHow to Use: 1.12.2 Installing blocks from a dedicated worldEdit");
                         break;
                     }
                     case "setBlock": {
@@ -1017,7 +1125,7 @@ public class MinigameUtilities implements CommandExecutor
 
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> setBlock <world> <x> <y> <z> <blockType>");
+                        player.sendMessage("§cUsage: /fut <player> setBlock <world> <x> <y> <z> <blockType>");
                         break;
                     }
                     case "setBlockChange": {
@@ -1035,75 +1143,15 @@ public class MinigameUtilities implements CommandExecutor
 
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> setBlockChange <world> <x> <y> <z> <blockType>");
-                        break;
-                    }
-
-                    case "setBedBlock": {
-                        if (args.length == 8) {
-                            final World world2 = Bukkit.getWorld(args[2]);
-                            final double x2 = Double.parseDouble(args[3]);
-                            final double y1 = Double.parseDouble(args[4]);
-                            final double z2 = Double.parseDouble(args[5]);
-                            final Location location = new Location(world2, x2, y1, z2);
-                            Block block = location.getBlock();
-                            Block block2;
-                            byte flags = (byte) 8;
-                            switch (BlockFace.valueOf(args[7])) {
-                                case EAST:
-                                    block2 = location.add(1, 0, 0).getBlock();
-                                    break;
-                                case SOUTH:
-                                    block2 = location.add(0, 0, 1).getBlock();
-                                    flags = (byte) (flags | 0x1);
-                                    break;
-                                case WEST:
-                                    block2 = location.add(-1, 0, 0).getBlock();
-                                    flags = (byte) (flags | 0x2);
-                                    break;
-                                case NORTH:
-                                    block2 = location.add(0, 0, -1).getBlock();
-                                    flags = (byte) (flags | 0x3);
-                                    break;
-                                default:
-                                    block2 = block;
-                            }
-                            block.setTypeIdAndData(26, flags, true);
-                            Bed bed = ((Bed) block.getState());
-                            bed.setColor(DyeColor.valueOf(args[6]));
-                            bed.update();
-
-                            break;
-                        }
-                        sender.sendMessage("§cUsage: /fut <player> setBedBlock <world> <x> <y> <z> <WHITE|ORANGE|MAGENTA|LIGHT_BLUE|YELLOW|LIME|PINK|GRAY|SILVER|CYAN|PURPLE|BLUE|BROWN|GREEN|RED|BLACK> <NORTH|SOUTH|EAST|WEST>");
+                        player.sendMessage("§cUsage: /fut <player> setBlockChange <world> <x> <y> <z> <blockType>");
                         break;
                     }
                     case "setBlocksWE": {
                         if (args.length >= 10) {
-                            new WorldEditor().setBlocksWE(args);
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> setBlocksWE <world> <x> <y> <z> <x2> <y2> <z2> <blockCode> [blockData]");
-                        break;
-                    }
-                    case "setBlockId": {
-                        if (args.length == 8) {
-                            final World world2 = Bukkit.getWorld(args[2]);
-                            final double x2 = Double.parseDouble(args[3]);
-                            final double y1 = Double.parseDouble(args[4]);
-                            final double z2 = Double.parseDouble(args[5]);
-                            final Material blockType = Material.getMaterial(Integer.parseInt(args[6]));
-                            ItemStack item = new ItemStack(blockType);
-                            item.setDurability(Short.parseShort(args[7]));
-                            Block block = new Location(world2, x2, y1, z2).getBlock();
-                            block.setData((byte) item.getDurability());
-                            //block = block.getRelative(BlockFace.valueOf(args[8]));
-                            miniGame.addBlock(block);
-                            block.setType(blockType);
-                            block.getState().update();
-                            break;
-                        }
-                        sender.sendMessage("§cUsage: /fut <player> setBlockId <world> <x> <y> <z> <frontBlockId> <lastBlockId>");
+                        player.sendMessage("§cUsage: /fut <player> setBlocksWE <world> <x> <y> <z> <x2> <y2> <z2> <blockCode> [blockData]");
+                        player.sendMessage("§cHow to Use: 1.12.2 Installing Blocks from a WorldEdit");
                         break;
                     }
                     case "relativeBlock": {
@@ -1116,21 +1164,26 @@ public class MinigameUtilities implements CommandExecutor
                             block.getRelative(BlockFace.valueOf(args[6]));
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> relativeBlock <world> <x> <y> <z> <SOUTH|WEST|NORTH|EAST|UP|DOWN|");
+                        player.sendMessage("§cUsage: /fut <player> relativeBlock <world> <x> <y> <z> <SOUTH|WEST|NORTH|EAST|UP|DOWN|");
                         break;
                     }
 
                     case "addBlock": {
-                        if (args.length == 6) {
+                        if (args.length >= 6) {
                             final World world2 = Bukkit.getWorld(args[2]);
-                            final double x2 = Double.parseDouble(args[3]);
-                            final double y1 = Double.parseDouble(args[4]);
-                            final double z2 = Double.parseDouble(args[5]);
-                            final Block block = new Location(world2, x2, y1, z2).getBlock();
-                            miniGame.addBlock(block);
+                            final int x2 = Integer.parseInt(args[3]);
+                            final int y1 = Integer.parseInt(args[4]);
+                            final int z2 = Integer.parseInt(args[5]);
+                            final Block block = world2.getBlockAt(x2, y1,z2);
+                            if (!(args.length == 7)) {
+                                miniGame.addBlock(block);
+                            } else {
+                                miniGame.addBlock(args[6], block.getState());
+                            }
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> addBlock <world> <x> <y> <z>");
+                        player.sendMessage("§cUsage: /fut <player> addBlock <world> <x> <y> <z> [blocksName]");
+                        player.sendMessage("§cHow to Use: Adding blocks to blocks to be initialized");
                         break;
                     }
                     case "setBlocks": {
@@ -1158,7 +1211,7 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> setBlocks <world> <x> <y> <z> <x2> <y2> <z2> <blockType>");
+                        player.sendMessage("§cUsage: /fut <player> setBlocks <world> <x> <y> <z> <x2> <y2> <z2> <blockType>");
                         break;
                     }
                     case "addBlocks": {
@@ -1185,7 +1238,7 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> addBlocks <world> <x> <y> <z> <x2> <y2> <z2>");
+                        player.sendMessage("§cUsage: /fut <player> addBlocks <world> <x> <y> <z> <x2> <y2> <z2>");
                         break;
 
                     }
@@ -1206,7 +1259,8 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> nearByEntities <x> <y> <z> <cmd>");
+                        player.sendMessage("§cUsage: /fut <player> nearByEntities <x> <y> <z> <cmd>");
+                        player.sendMessage("§cHow to Use: Run as many entities in the radius of the player");
                         break;
                     }
                     case "entityNearByEntities": {
@@ -1226,7 +1280,19 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> entityNearByEntities <entityUuid> <x> <y> <z> <cmd>");
+                        player.sendMessage("§cUsage: /fut <player> entityNearByEntities <entityUuid> <x> <y> <z> <cmd>");
+                        player.sendMessage("§cHow to Use: Running as many entities in the entity radius of");
+                        break;
+                    }
+                    case "goalTarget": {
+                        if (args.length >= 4) {
+                            Entity entity = Bukkit.getEntity(UUID.fromString(args[2]));
+                            Creature target = (Creature) entity;
+                            target.setTarget(((LivingEntity) Bukkit.getEntity(UUID.fromString(args[3]))));
+                            break;
+                        }
+                        player.sendMessage("§cUsage: /fut <player> goalTarget <entityUuid> <passengerUuid>");
+                        player.sendMessage("§cHow to Use: Targeting entities on an entity");
                         break;
                     }
                     case "ride": {
@@ -1234,7 +1300,8 @@ public class MinigameUtilities implements CommandExecutor
                             Bukkit.getEntity(UUID.fromString(args[2])).setPassenger(Bukkit.getEntity(UUID.fromString(args[3])));
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> ride <entityUuid> <passengerUuid>");
+                        player.sendMessage("§cUsage: /fut <player> ride <entityUuid> <passengerUuid>");
+                        player.sendMessage("§cHow to Use: Entity is targeting an entity");
                         break;
                     }
                     case "removeRide": {
@@ -1249,7 +1316,8 @@ public class MinigameUtilities implements CommandExecutor
                             world.playSound(loc, Sound.valueOf(args[6]), Float.parseFloat(args[7]), Float.parseFloat(args[8]));
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> playSound <world> <x> <y> <z> <sound> <volume> <pitch>");
+                        player.sendMessage("§cUsage: /fut <player> playSound <world> <x> <y> <z> <sound> <volume> <pitch>");
+                        player.sendMessage("§cHow to Use: Play a sound from a location");
                         break;
                     }
                     case "stopSound": {
@@ -1259,7 +1327,8 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> stopSound <sound>");
+                        player.sendMessage("§cUsage: /fut <player> stopSound <sound>");
+                        player.sendMessage("§cHow to Use: Stop a sound from the player");
                         break;
                     }
                     case "summon": {
@@ -1271,7 +1340,8 @@ public class MinigameUtilities implements CommandExecutor
                             entity.setCustomNameVisible(Boolean.parseBoolean(args[8]));
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> summon <world> <x> <y> <z> <Type> <name> <nameVisible>");
+                        player.sendMessage("§cUsage: /fut <player> summon <world> <x> <y> <z> <Type> <name> <nameVisible>");
+                        player.sendMessage("§cHow to Use: Summon entities");
                         break;
                     }
                     case "blockParticle": {
@@ -1283,7 +1353,8 @@ public class MinigameUtilities implements CommandExecutor
                             world.spawnParticle(Particle.ITEM_CRACK, loc, Integer.parseInt(args[8]), 0.1, 0.1, 0.1, 0.1, itemStack);
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> blockParticle <world> <x> <y> <z> <Type> <Data> <count>");
+                        player.sendMessage("§cUsage: /fut <player> blockParticle <world> <x> <y> <z> <Type> <Data> <count>");
+                        player.sendMessage("§cHow to Use: To execute a particle that breaks a block");
                         break;
                     }
                     case "particle": {
@@ -1298,24 +1369,28 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> particle <world> <x> <y> <z> <Type> <count> <isStatic>");
+                        player.sendMessage("§cUsage: /fut <player> particle <world> <x> <y> <z> <Type> <count> <isStatic>");
+                        player.sendMessage("§cHow to Use: To execute a particle:");
                         break;
                     }
                     case "fallingBlock": {
-                        if (args.length >= 12) {
+                        if (args.length >= 11) {
                             World world = Bukkit.getWorld(args[2]);
                             Location loc = new Location(world, Double.parseDouble(args[3]), Double.parseDouble(args[4]), Double.parseDouble(args[5]));
                             loc.setYaw(Float.parseFloat(args[6]));
                             loc.setPitch(Float.parseFloat(args[7]));
-                            FallingBlock fallingBlock = world.spawnFallingBlock(loc, Integer.parseInt(args[10]), (byte) Integer.parseInt(args[11]));
+                            assert world != null;
+                            FallingBlock fallingBlock = world.spawnFallingBlock(loc, Material.valueOf(args[10]).createBlockData());
                             fallingBlock.setDropItem(false);
                             fallingBlock.setVelocity(loc.getDirection().multiply(Double.parseDouble(args[8])));
                             fallingBlock.setGravity(Boolean.parseBoolean(args[9]));
                             fallingBlock.setCustomNameVisible(false);
+                            assert player != null;
                             fallingBlock.setCustomName(player.getUniqueId().toString());
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> fallingBlock <world> <x> <y> <z> <yaw> <pitch> <speed> <hasGravity> <blockId> <blockData>");
+                        player.sendMessage("§cUsage: /fut <player> fallingBlock <world> <x> <y> <z> <yaw> <pitch> <speed> <hasGravity> <blockType>");
+                        player.sendMessage("§cHow to Use: Summon falling blocks");
                         break;
                     }
                     case "shoot": {
@@ -1332,7 +1407,8 @@ public class MinigameUtilities implements CommandExecutor
                             projectile.setCustomNameVisible(Boolean.parseBoolean(args[12]));
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> shoot <world> <x> <y> <z> <yaw> <pitch> <Type> <speed> <hasGravity> <name> <nameVisible>");
+                        player.sendMessage("§cUsage: /fut <player> shoot <world> <x> <y> <z> <yaw> <pitch> <Type> <speed> <hasGravity> <name> <nameVisible>");
+                        player.sendMessage("§cHow to Use: Launch projectiles in a direction to a location");
                         break;
                     }
                     case "shootTarget": {
@@ -1348,7 +1424,8 @@ public class MinigameUtilities implements CommandExecutor
                             projectile.setCustomNameVisible(Boolean.parseBoolean(args[10]));
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> shootTarget <world> <x> <y> <z> <Type> <speed> <hasGravity> <name> <nameVisible>");
+                        player.sendMessage("§cUsage: /fut <player> shootTarget <world> <x> <y> <z> <Type> <speed> <hasGravity> <name> <nameVisible>");
+                        player.sendMessage("§cHow to Use: Fire a projectile at the player");
                         break;
                     }
                     case "drop": {
@@ -1360,7 +1437,8 @@ public class MinigameUtilities implements CommandExecutor
                             entity.setCustomNameVisible(Boolean.parseBoolean(args[8]));
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> drop <world> <x> <y> <z> <itemType> <name>");
+                        player.sendMessage("§cUsage: /fut <player> drop <world> <x> <y> <z> <itemType> <name>");
+                        player.sendMessage("§cHow to Use: Drop items to a location");
                         break;
                     }
                     case "conLog": {
@@ -1368,15 +1446,21 @@ public class MinigameUtilities implements CommandExecutor
                             System.out.println(this.replace(player, miniGame, args[2]));
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> conLog <message>");
+                        player.sendMessage("§cUsage: /fut <player> conLog <message>");
+                        player.sendMessage("§cHow to Use: Output a message to the console");
                         break;
                     }
                     case "give": {
-                        if (args.length >= 3) {
+                        if (args.length == 3) {
                             this.miniGames.getNoneGame().giveItem(player, this.replace(player, miniGame, args[2]));
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> give <\ucee4\uc2a4\ud140\uc544\uc774\ud15c\uc774\ub984>");
+                        else if (args.length == 4) {
+                            this.miniGames.getNoneGame().giveItem(player, this.replace(player, miniGame, args[2]), Integer.parseInt(args[3]));
+                            break;
+                        }
+                        player.sendMessage("§cUsage: /fut <player> give <customItem> [amount]");
+                        player.sendMessage("§cHow to Use: Give the Player an Item");
                         break;
                     }
                     case "repairItem": {
@@ -1393,11 +1477,11 @@ public class MinigameUtilities implements CommandExecutor
                             this.miniGames.getNoneGame().setFile(args[2], message5.equals("none") ? null : message5);
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> setFileData <customData> <data>");
+                        player.sendMessage("§cUsage: /fut <player> setFileData <customData> <data>");
                         break;
                     }
                     case "saveFile": {
-                        this.miniGames.getFileStore().save();
+                        this.miniGames.getFileStore().saveConfig();
                         break;
                     }
                     case "updateBoard": {
@@ -1424,7 +1508,7 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> updateBoard <private|public|game> <title> <lineName> <line> <message>");
+                        player.sendMessage("§cUsage: /fut <player> updateBoard <private|public|game> <title> <lineName> <line> <message>");
                         break;
                     }
                     case "setBoard": {
@@ -1451,7 +1535,7 @@ public class MinigameUtilities implements CommandExecutor
                             }
                             break;
                         }
-                        sender.sendMessage("§cUsage: /fut <player> setBoard <private|public|game> <title>");
+                        player.sendMessage("§cUsage: /fut <player> setBoard <private|public|game> <title>");
                         break;
                     }
                     case "shutDown":
@@ -1470,17 +1554,13 @@ public class MinigameUtilities implements CommandExecutor
                 }
             }
             else {
-                sender.sendMessage("§cUsage: /fut <player> <gui|teleport|sendMsg|sendActionBar|sendTitle|sendSound|gameMode|health|food|addPotion|removePotion|kit|openGui|closeGui|join|joinAll|knockBack|giveHand|cursor|kick|move|if|while|do|execute|executeCmd|executeDelayCmd|executeConCmd|executeConDelayCmd|topTp|resetBlocks|setData|addData|setPlayerData|addPlayerData|setBlock|give|repairItem|cancelEvent|setFile|saveFile|shutDown|||||||||> ...");
+                sender.sendMessage("§cUsage: /fut <player> <gui|setGui|resetGui|teleport|tp|sendMsg|sendJson|sendActionBar|sendTitle|sendBossBar|sendSoundgameMode|hide|show|health|food|addPotion|removePotion|kit|openGui|closeGui|addToTeam|setWeather|resetWeather|setTime|resetTime|removeFire|loadChunk|regenChunk|fakeBlock|join|joinAll|knockBack|entityKnockBack|addKnockBack|entityAddKnockBack|giveHand|giveCursor|setHelmet|setChestplate|setLeggings|setBoots|cursor|kill|damage|kick|move|if|while|do|execute|executeCmd|executeDelayCmd|executeConCmd|executeConDelayCmd|topTp|cancelAllDelayCmd|resetBlocks|setData|addData|setPlayerData|addPlayerData|nearByEntities|entityNearByEntities|goalTarget|ride|removeRide|playSound|stopSound|summon|blockParticle|particle|fallingBlock|shoot|shootTarget|drop|conLog|give|repairItem|cancelEvent|setFile|saveFile|shutDown> ...");
             }
         }
         else {
             sender.sendMessage("§cNo permission");
         }
         return true;
-    }
-
-    boolean checkIf(final Player player, final MiniGame miniGame, final String[] args) {
-        return this.checkIf(this.replace(player, miniGame, args[2]), this.replace(player, miniGame, args[4]), args[3]);
     }
 
     String replace(final Player player, final MiniGame miniGame, String value) {

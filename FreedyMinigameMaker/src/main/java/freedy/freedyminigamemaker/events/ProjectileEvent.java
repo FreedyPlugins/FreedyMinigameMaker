@@ -13,7 +13,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 
-import java.util.List;
 import java.util.UUID;
 
 public class ProjectileEvent implements Listener {
@@ -29,22 +28,41 @@ public class ProjectileEvent implements Listener {
     @EventHandler
     public void onHitProjectile(ProjectileHitEvent event) {
         Projectile damagerEntity = event.getEntity();
-        if (damagerEntity.getShooter() instanceof Player && event.getHitBlock() != null) {
+        if (damagerEntity.getShooter() instanceof Player) {
             Player player = (Player) damagerEntity.getShooter();
             Block block = event.getHitBlock();
+            String blockWorld = "none";
+            String blockType = "none";
+            String blockX = "none";
+            String blockY = "none";
+            String blockZ = "none";
+            if (block != null){
+                blockWorld = block.getWorld().getName();
+                blockType = block.getType().name();
+                blockX = String.valueOf(block.getX());
+                blockY = String.valueOf(block.getY());
+                blockZ = String.valueOf(block.getZ());
+            }
+            String entityName  = "none";
+            String entityType = "none";
+            if (event.getHitEntity() != null) {
+                entityType = event.getHitEntity().getType().name();
+                entityName = event.getHitEntity().getName();
+            }
             if (this.miniGames.isJoined(player)) {
                 final MiniGame miniGame = this.miniGames.getJoined(player);
-                for (final String cmd : miniGame.getMessageList("projectileHitBlockCmd")) {
+                for (final String cmd : miniGame.getMessageList("projectileHitCmd")) {
                     miniGame.executeEventCommands(cmd
                                     .replace("{projectileType}", damagerEntity.getType().name())
                                     .replace("{projectileName}", damagerEntity.getName())
                                     .replace("{projectileUuid}", damagerEntity.getUniqueId().toString())
-                            .replace("{blockWorld}", block.getWorld().getName())
-                            .replace("{blockType}", block.getType().name())
-                            .replace("{blockX}", String.valueOf(block.getX()))
-                            .replace("{blockY}", String.valueOf(block.getY()))
-                            .replace("{blockZ}", String.valueOf(block.getZ()))
-                            .replace("{blockFace}", block.getFace(block).name())
+                                    .replace("{blockWorld}", blockWorld)
+                                    .replace("{blockType}", blockType)
+                                    .replace("{blockX}", blockX)
+                                    .replace("{blockY}", blockY)
+                                    .replace("{blockZ}", blockZ)
+                                    .replace("{entityType}", entityType)
+                                    .replace("{entityName}", entityName)
                             , player);
                 }
             }
@@ -71,7 +89,7 @@ public class ProjectileEvent implements Listener {
                 for (final String cmd : miniGame.getMessageList("fallingBlockCmd")) {
                     final String output = miniGame.executeEventCommands(cmd
                             .replace("{fallingBlockUuid}", fallingBlock.getUniqueId().toString())
-                            .replace("{fallingBlockId}", String.valueOf(fallingBlock.getBlockId()))
+                            .replace("{fallingBlockType}", String.valueOf(fallingBlock.getBlockData().getMaterial()))
                             .replace("{fallingBlockData}", String.valueOf(fallingBlock.getBlockData()))
                             , player);
                     if (output.equals("false")) {

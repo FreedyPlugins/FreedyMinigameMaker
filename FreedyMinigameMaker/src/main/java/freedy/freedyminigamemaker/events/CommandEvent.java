@@ -3,13 +3,10 @@ package freedy.freedyminigamemaker.events;
 import freedy.freedyminigamemaker.FreedyMinigameMaker;
 import freedy.freedyminigamemaker.MiniGame;
 import freedy.freedyminigamemaker.MiniGames;
-import freedy.freedyminigamemaker.commands.FreedyCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-
-import java.util.List;
 
 public class CommandEvent implements Listener {
 

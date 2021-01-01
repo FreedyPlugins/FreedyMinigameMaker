@@ -1,7 +1,3 @@
-// 
-// Decompiled by Procyon v0.5.36
-// 
-
 package freedy.freedyminigamemaker;
 
 import org.bukkit.*;
@@ -30,7 +26,8 @@ public class DataStore extends DataEditor
     }
 
     public String getGameType() {
-        return this.plugin.getConfig().getString(this.gamePath + "gameType");
+        final String gameType = this.plugin.getConfig().getString(this.gamePath + "gameType");
+        return gameType == null ? "none" : gameType;
     }
     
     public List<String> getGameList() {
@@ -120,11 +117,11 @@ public class DataStore extends DataEditor
     }
 
     public String getInventoryTitle(final String invName) {
-        return this.plugin.getConfig().getString("inventories." + invName + ".title");
+        return FreedyMinigameMaker.miniGames.getItems().getConfig().getString("inventories." + invName + ".title");
     }
     
     public List<String> getInventoryCmd(final String invName, final int index) {
-        return this.plugin.getConfig().getStringList("inventories." + invName + "." + index + "Cmd");
+        return FreedyMinigameMaker.miniGames.getItems().getConfig().getStringList("inventories." + invName + "." + index + "Cmd");
     }
     
     public List<String> getCmdByTitle(final String title, final int index) {
@@ -137,44 +134,44 @@ public class DataStore extends DataEditor
     }
     
     public List<String> getInventoryList() {
-        return this.plugin.getConfig().getStringList("inventoryList");
+        return FreedyMinigameMaker.miniGames.getItems().getConfig().getStringList("inventoryList");
     }
     
     public List<String> getInventoryTitleList() {
         final List<String> inventoryList = this.getInventoryList();
         final List<String> titleList = new ArrayList<>();
         for (final String invName : inventoryList) {
-            titleList.add(this.plugin.getConfig().getString("inventories." + invName + ".title"));
+            titleList.add(FreedyMinigameMaker.miniGames.getItems().getConfig().getString("inventories." + invName + ".title"));
         }
         return titleList;
     }
     
     public Inventory getInventory(final String invName) {
-        if (this.plugin.getConfig().getStringList("inventoryList").contains(invName)) {
-            final int size = this.plugin.getConfig().getInt("inventories." + invName + ".size");
-            final String title = this.plugin.getConfig().getString("inventories." + invName + ".title");
+        if (FreedyMinigameMaker.miniGames.getItems().getConfig().getStringList("inventoryList").contains(invName)) {
+            final int size = FreedyMinigameMaker.miniGames.getItems().getConfig().getInt("inventories." + invName + ".size");
+            final String title = FreedyMinigameMaker.miniGames.getItems().getConfig().getString("inventories." + invName + ".title");
             final Inventory inventory = Bukkit.createInventory(null, size, title);
             for (int i = 0; i < size; ++i) {
-                final ItemStack itemStack = this.plugin.getConfig().getItemStack("inventories." + invName + ".items." + i);
+                final ItemStack itemStack = FreedyMinigameMaker.miniGames.getItems().getConfig().getItemStack("inventories." + invName + ".items." + i);
                 if (itemStack != null) {
                     inventory.setItem(i, itemStack);
                 }
             }
             return inventory;
         }
-        return Bukkit.createInventory(null, 27, "\uc774 \uc778\ubca4\ud1a0\ub9ac\ub294 \uc874\uc7ac\ud558\uc9c0 \uc54a\uc74c");
+        return Bukkit.createInventory(null, 27, "This inventory does not exist");
     }
     
     public ItemStack getItem(final String kitName, final int index) {
-        if (this.plugin.getConfig().getStringList("kitList").contains(kitName)) {
-            return this.plugin.getConfig().getItemStack("kits." + kitName + ".items." + index);
+        if (FreedyMinigameMaker.miniGames.getItems().getConfig().getStringList("kitList").contains(kitName)) {
+            return FreedyMinigameMaker.miniGames.getItems().getConfig().getItemStack("kits." + kitName + ".items." + index);
         }
         return new ItemStack(Material.BEDROCK);
     }
     
     public ItemStack getItem(final String itemName) {
-        if (this.plugin.getConfig().getStringList("itemList").contains(itemName)) {
-            return this.plugin.getConfig().getItemStack("items." + itemName);
+        if (FreedyMinigameMaker.miniGames.getItems().getConfig().getStringList("itemList").contains(itemName)) {
+            return FreedyMinigameMaker.miniGames.getItems().getConfig().getItemStack("items." + itemName);
         }
         return new ItemStack(Material.BEDROCK);
     }

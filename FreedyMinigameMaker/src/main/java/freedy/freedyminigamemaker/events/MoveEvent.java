@@ -1,7 +1,3 @@
-// 
-// Decompiled by Procyon v0.5.36
-// 
-
 package freedy.freedyminigamemaker.events;
 
 import freedy.freedyminigamemaker.FreedyMinigameMaker;

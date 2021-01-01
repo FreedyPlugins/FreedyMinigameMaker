@@ -6,17 +6,17 @@
 
     <groupId>Freedy</groupId>
     <artifactId>FreedyMinigameMaker</artifactId>
-    <version>Build 17</version>
+    <version>Build 24</version>
     <packaging>jar</packaging>
 
     <name>FreedyMinigameMaker</name>
 
-    <description>Make Minigame to good way.</description>
+    <description>Make Minigame to good way</description>
     <properties>
         <java.version>1.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-    <url>https://freedyplugins.github.io/FreedyPlugins/</url>
+    <url>https://www.spigotmc.org/resources/freedyminigamemaker.86962/</url>
 
     <build>
         <plugins>
@@ -63,23 +63,12 @@
             <id>sonatype</id>
             <url>https://oss.sonatype.org/content/groups/public/</url>
         </repository>
-        <repository>
-            <id>enginehub-maven</id>
-            <url>http://maven.enginehub.org/repo/</url>
-        </repository>
     </repositories>
-
     <dependencies>
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.12.2-R0.1-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.sk89q.worldedit</groupId>
-            <artifactId>worldedit-bukkit</artifactId>
-            <version>6.1.4-SNAPSHOT</version>
+            <version>1.16.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

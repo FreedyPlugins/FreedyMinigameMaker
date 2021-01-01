@@ -1,13 +1,8 @@
-// 
-// Decompiled by Procyon v0.5.36
-// 
-
 package freedy.freedyminigamemaker.events;
 
 import freedy.freedyminigamemaker.FreedyMinigameMaker;
 import freedy.freedyminigamemaker.MiniGame;
 import freedy.freedyminigamemaker.MiniGames;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -33,6 +28,8 @@ public class ClickEvent implements Listener
                     if (cmd != null) {
                         String output = miniGame.executeEventCommands(cmd
                                 .replace("{slot}", String.valueOf(event.getSlot()))
+                                .replace("{invType}", String.valueOf(event.getClickedInventory().getType().name()))
+                                .replace("{clickType}", String.valueOf(event.getClick().name()))
                                 , player);
                         if (output.equals("false")) {
                             event.setCancelled(true);
@@ -40,12 +37,16 @@ public class ClickEvent implements Listener
                     }
                 }
             }
-            final String title = event.getInventory().getTitle();
+            final String title = player.getOpenInventory().getTitle();
+
             final int index = event.getSlot();
             if (miniGame.isExistingTitle(title)) {
                 for (final String cmd : miniGame.getMessageList(miniGame.getInvName(title) + "ClickCmd")) {
                     if (cmd != null) {
-                        String output = miniGame.executeEventCommands(cmd.replace("{slot}", String.valueOf(index))
+                        String output = miniGame.executeEventCommands(cmd
+                                        .replace("{slot}", String.valueOf(index))
+                                        .replace("{invType}", String.valueOf(event.getClickedInventory().getType().name()))
+                                        .replace("{clickType}", String.valueOf(event.getClick().name()))
                                 , player);
                         if (output.equals("false")) {
                             event.setCancelled(true);

@@ -1,7 +1,3 @@
-// 
-// Decompiled by Procyon v0.5.36
-// 
-
 package freedy.freedyminigamemaker;
 
 import freedy.freedyminigamemaker.commands.MinigameCommand;
@@ -14,6 +10,7 @@ public final class FreedyMinigameMaker extends JavaPlugin
     public static MiniGames miniGames;
 
     public void onEnable() {
+
         this.getConfig().options().copyDefaults();
         this.saveDefaultConfig();
         FreedyMinigameMaker.miniGames = new MiniGames(this);
@@ -35,6 +32,8 @@ public final class FreedyMinigameMaker extends JavaPlugin
         this.getServer().getPluginManager().registerEvents(new ChatEvent(), this);
         this.getServer().getPluginManager().registerEvents(new DropEvent(), this);
         this.getServer().getPluginManager().registerEvents(new PickupEvent(), this);
+        this.getServer().getPluginManager().registerEvents(new ItemConsumeEvent(), this);
+        this.getServer().getPluginManager().registerEvents(new PlayerDoingEvent(), this);
         this.getServer().getPluginManager().registerEvents(new WorldChangeEvent(), this);
         this.getServer().getPluginManager().registerEvents(new CommandEvent(), this);
         this.getCommand("fmg").setExecutor(new MinigameCommand(this));
