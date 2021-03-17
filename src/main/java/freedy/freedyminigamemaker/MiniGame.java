@@ -465,38 +465,11 @@ public class MiniGame extends DataStore
         }
     }
     
-    public void setWorldBoarder() {
-        if (this.getWorldBoarderMode()) {
-            final WorldBorder worldBorder = this.getWorldBoarder();
-            final Location worldBoarderLocation = this.getWorldBoarderLocation();
-            Label_0127: {
-                if (this.getSafeWorldBoarderFinderMode()) {
-                    for (int x = 0; x < 1000; ++x) {
-                        for (int z = 0; z < 1000; ++z) {
-                            final Biome biome = worldBoarderLocation.getWorld().getBiome(x, z);
-                            if (biome != Biome.OCEAN && biome != Biome.DEEP_OCEAN && biome != Biome.FROZEN_OCEAN) {
-                                worldBoarderLocation.setX(x);
-                                worldBoarderLocation.setZ(z);
-                                worldBorder.setCenter(worldBoarderLocation);
-                                break Label_0127;
-                            }
-                        }
-                    }
-                }
-                else {
-                    worldBorder.setCenter(worldBoarderLocation);
-                }
-            }
-            worldBorder.setDamageAmount(this.getWorldBoarderOutDamage());
-            worldBorder.setSize(this.getWorldBoarderSizePerPlayer() * this.playerAmount);
-            worldBorder.setSize(this.getWorldBoarderMinSize(), this.getWorldBoarderSpeed());
-        }
-    }
+
     
     public void start() {
         Collections.shuffle(this.playerList);
         this.playerAmount = this.playerList.size();
-        this.setWorldBoarder();
         this.executeCommands(this.freedyCommandSender, this.getMessageList("conStartCmd"), null);
         for (final Player p2 : this.playerList) {
             if (this.getMessage("startMsg") != null) {

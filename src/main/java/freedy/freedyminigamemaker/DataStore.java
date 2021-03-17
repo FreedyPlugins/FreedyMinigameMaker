@@ -63,51 +63,11 @@ public class DataStore extends DataEditor
     }
     
     public boolean getLocationIsExist(final String locationPath) {
-        return this.plugin.getConfig().isSet(this.gamePath + locationPath);
+        return MiniGames.getLocations().getConfig().isSet(this.gamePath + locationPath);
     }
-    
-    public boolean getSafeWorldBoarderFinderMode() {
-        return this.plugin.getConfig().getBoolean(this.gamePath + "safeWorldBoarderFinderMode");
-    }
-    
-    public boolean getScoreBoardMode() {
-        return this.plugin.getConfig().getBoolean(this.gamePath + "scoreBoardEnable");
-    }
-    
-    public boolean getWorldBoarderMode() {
-        return this.plugin.getConfig().getBoolean(this.gamePath + "worldBoarder.enable");
-    }
-    
-    public Location getWorldBoarderLocation() {
-        final World world = Bukkit.getWorld(this.plugin.getConfig().getString(this.gamePath + "worldBoarder.location.world"));
-        final int x = this.plugin.getConfig().getInt(this.gamePath + "worldBoarder.location.x");
-        final int y = this.plugin.getConfig().getInt(this.gamePath + "worldBoarder.location.y");
-        final int z = this.plugin.getConfig().getInt(this.gamePath + "worldBoarder.location.z");
-        return new Location(world, x, y, z);
-    }
-    
-    public WorldBorder getWorldBoarder() {
-        return Bukkit.getWorld(this.plugin.getConfig().getString(this.gamePath + "worldBoarder.location.world")).getWorldBorder();
-    }
-    
-    public int getWorldBoarderSizePerPlayer() {
-        return this.plugin.getConfig().getInt(this.gamePath + "worldBoarder.sizePerPlayer");
-    }
-    
-    public double getWorldBoarderOutDamage() {
-        return this.plugin.getConfig().getDouble(this.gamePath + "worldBoarder.outDamage");
-    }
-    
-    public int getWorldBoarderMinSize() {
-        return this.plugin.getConfig().getInt(this.gamePath + "worldBoarder.minSize");
-    }
-    
-    public int getWorldBoarderSpeed() {
-        return this.plugin.getConfig().getInt(this.gamePath + "worldBoarder.speed");
-    }
-    
+
     public Location getLocation(final String locationPath) {
-        final String worldName = this.plugin.getConfig().getString(this.gamePath + locationPath + ".world");
+        final String worldName = MiniGames.getLocations().getConfig().getString(this.gamePath + locationPath + ".world");
         if (worldName == null) {
             return null;
         }
@@ -170,13 +130,13 @@ public class DataStore extends DataEditor
         if (MiniGames.getItems().getConfig().getStringList("kitList").contains(kitName)) {
             return MiniGames.getItems().getConfig().getItemStack("kits." + kitName + ".items." + index);
         }
-        return new ItemStack(Material.BEDROCK);
+        return new ItemStack(Material.AIR);
     }
     
     public ItemStack getItem(final String itemName) {
         if (MiniGames.getItems().getConfig().getStringList("itemList").contains(itemName)) {
             return MiniGames.getItems().getConfig().getItemStack("items." + itemName);
         }
-        return new ItemStack(Material.BEDROCK);
+        return new ItemStack(Material.AIR);
     }
 }
