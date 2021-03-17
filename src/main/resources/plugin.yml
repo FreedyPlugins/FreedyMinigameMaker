@@ -1,0 +1,22 @@
+name: FreedyMinigameMaker
+version: @version@
+main: freedy.freedyminigamemaker.FreedyMinigameMaker
+api-version: 1.16
+authors: [ Bruce0203, Monday_blues_, Dixizer ]
+description: Make Minigame to good way
+website: https://freedyplugins.github.io/FreedyPlugins/EnglishWiki
+commands:
+  fmg:
+    description: Join, exit, create, or delete mini-games...
+  fut:
+    description: A collection of instructions to help you with your mini-game.
+permissions:
+  freedyminigamemaker.admin:
+    description: Permission to create, modify, or delete minigames
+    default: op
+  freedyminigamemaker.join:
+    description: Permissions for command participation in minigames
+    default: op
+  freedyminigamemaker.quit:
+    description: Permission to use the command to exit the mini-game
+    default: op
