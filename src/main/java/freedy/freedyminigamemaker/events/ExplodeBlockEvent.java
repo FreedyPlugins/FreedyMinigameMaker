@@ -24,7 +24,7 @@ public class ExplodeBlockEvent implements Listener
     
     @EventHandler
     public void onBlockExplode(final EntityExplodeEvent event) {
-        if (this.miniGames.getSettings().getConfig().getBoolean("cancelBlockExplode")) {
+        if (MiniGames.getSettings().getConfig().getBoolean("cancelBlockExplode")) {
             if (event.isCancelled()) {
                 return;
             }

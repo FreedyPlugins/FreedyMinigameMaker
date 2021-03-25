@@ -22,7 +22,7 @@ public class JoinEvent implements Listener
     @EventHandler
     public void onQuit(final PlayerJoinEvent event) {
         final Player player = event.getPlayer();
-        if (this.miniGames.getSettings().getConfig().getBoolean("hideJoinLeaveMessage")) {
+        if (MiniGames.getSettings().getConfig().getBoolean("hideJoinLeaveMessage")) {
             event.setJoinMessage(null);
         }
         final String defaultJoinGame = this.miniGames.getNoneGame().getSettings("defaultJoinGame");

@@ -147,6 +147,90 @@ public class MinigameCommand implements CommandExecutor
                     player.sendMessage("§cHow to Use: /fmg remove <gameName>");
                     break;
                 }
+                case "kit": {
+                    if (args.length == 2) {
+                        final PlayerInventory inventory = player.getInventory();
+                        for (int i = 0; i < inventory.getSize(); ++i) {
+                            MiniGames.getItems().getConfig().set("kits." + args[1] + ".items." + i, inventory.getItem(i));
+                        }
+                        final List<String> inventoryList = MiniGames.getItems().getConfig().getStringList("kitList");
+                        if (!inventoryList.contains(args[1])) {
+                            inventoryList.add(args[1]);
+                        }
+                        MiniGames.getItems().getConfig().set("kitList", inventoryList);
+                        MiniGames.getItems().saveConfig();
+                        player.sendMessage("§6Your kit that inventory items  of " + args[1] + " has been saved");
+                        break;
+                    }
+                    player.sendMessage("§cHow to Use: /fmg kit <kitName>");
+                    break;
+                }
+                case "item": {
+                    if (args.length == 2) {
+                        final PlayerInventory inventory = player.getInventory();
+                        MiniGames.getItems().getConfig().set("items." + args[1], inventory.getItemInMainHand());
+                        final List<String> itemList = MiniGames.getItems().getConfig().getStringList("itemList");
+                        if (!itemList.contains(args[1])) {
+                            itemList.add(args[1]);
+                        }
+                        MiniGames.getItems().getConfig().set("itemList", itemList);
+                        MiniGames.getItems().saveConfig();
+                        player.sendMessage("§6Your item of " + args[1] + " has been saved");
+                        break;
+                    }
+                    player.sendMessage("§cHow to Use: /fmg item <itemName>");
+                    break;
+                }
+                case "inv": {
+                    if (args.length >= 4) {
+                        final String s8;
+                        final String s4 = s8 = args[1];
+                        switch (s8) {
+                            case "addItem": {
+                                if (args.length == 6) {
+                                    MiniGames.getItems().getConfig().set("inventories." + args[2] + ".items." + args[3], player.getInventory().getItemInMainHand());
+                                    MiniGames.getItems().saveConfig();
+                                    player.sendMessage("§6Your item has been saved in line " + args[3] + " of " + args[2] + " inventory");
+                                    break;
+                                }
+                                player.sendMessage("§cHow to Use: /fmg inv addItem <invName> <line>");
+                                break;
+                            }
+                            case "create": {
+                                if (args.length == 5) {
+                                    MiniGames.getItems().getConfig().set("inventories." + args[2] + ".title", ChatColor.translateAlternateColorCodes('&', args[4].replace("{spc}", " ")));
+                                    MiniGames.getItems().getConfig().set("inventories." + args[2] + ".size", Integer.parseInt(args[3]));
+                                    final List<String> inventoryList2 = MiniGames.getItems().getConfig().getStringList("inventoryList");
+                                    if (!inventoryList2.contains(args[2])) {
+                                        inventoryList2.add(args[2]);
+                                    }
+                                    MiniGames.getItems().getConfig().set("inventoryList", inventoryList2);
+                                    MiniGames.getItems().saveConfig();
+                                    player.sendMessage("§6" + args[2] + " inventory successfully created");
+                                    break;
+                                }
+                                player.sendMessage("§cHow to Use: /fmg inv create <invName> <9|18|27|36|45|54> <title>");
+                                break;
+                            }
+                            default: {
+                                player.sendMessage("§cHow to Use: /fmg set <gameName> inv <addItem|create> ...");
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                    player.sendMessage("§cHow to Use: /fmg set <gameName> inv <addItem|create> ...");
+                    break;
+                }
+                case "loc": {
+                    if (args.length == 4) {
+                        this.miniGames.getEditor(args[1]).setLocation(args[1] + "Location", playerLocation.getWorld().getName(), playerLocation.getX(), playerLocation.getY(), playerLocation.getZ(), playerLocation.getYaw(), playerLocation.getPitch());
+                        player.sendMessage("§6Your custom location " + args[1] + " has been saved");
+                        break;
+                    }
+                    player.sendMessage("§cHow to Use: /fmg loc <customName>");
+                    break;
+                }
                 case "set": {
                     if (!player.hasPermission("freedyminigamemaker.admin")) {
                         player.sendMessage("§cYou do not have permission.");
@@ -181,81 +265,6 @@ public class MinigameCommand implements CommandExecutor
                                 player.sendMessage("§cHow to Use: /fmg set <gameName> gameType <death|build>");
                                 break;
                             }
-                            case "kit": {
-                                if (args.length == 5) {
-                                    final PlayerInventory inventory = player.getInventory();
-                                    for (int i = 0; i < inventory.getSize(); ++i) {
-                                        this.miniGames.getItems().getConfig().set("kits." + args[4] + ".items." + i, inventory.getItem(i));
-                                    }
-                                    final List<String> inventoryList = this.miniGames.getItems().getConfig().getStringList("kitList");
-                                    if (!inventoryList.contains(args[4])) {
-                                        inventoryList.add(args[4]);
-                                    }
-                                    this.miniGames.getItems().getConfig().set("kitList", inventoryList);
-                                    this.miniGames.getItems().saveConfig();
-                                    player.sendMessage("§6Your kit that inventory items  of " + args[3] + " has been saved");
-                                    break;
-                                }
-                                player.sendMessage("§cHow to Use: /fmg set <gameName> kit create <kitName>");
-                                break;
-                            }
-                            case "item": {
-                                if (args.length == 4) {
-                                    final PlayerInventory inventory = player.getInventory();
-                                    this.miniGames.getItems().getConfig().set("items." + args[3], inventory.getItemInMainHand());
-                                    final List<String> itemList = this.miniGames.getItems().getConfig().getStringList("itemList");
-                                    if (!itemList.contains(args[3])) {
-                                        itemList.add(args[3]);
-                                    }
-                                    this.miniGames.getItems().getConfig().set("itemList", itemList);
-                                    this.miniGames.getItems().saveConfig();
-                                    player.sendMessage("§6Your item of " + args[3] + " has been saved");
-                                    break;
-                                }
-                                player.sendMessage("§cHow to Use: /fmg set <gameName> item <itemName>");
-                                break;
-                            }
-                            case "inv": {
-                                if (args.length >= 4) {
-                                    final String s8;
-                                    final String s4 = s8 = args[3];
-                                    switch (s8) {
-                                        case "addItem": {
-                                            if (args.length == 6) {
-                                                this.miniGames.getItems().getConfig().set("inventories." + args[4] + ".items." + args[5], player.getInventory().getItemInMainHand());
-                                                this.miniGames.getItems().saveConfig();
-                                                player.sendMessage("§6Your item has been saved in line " + args[5] + " of " + args[4] + " inventory");
-                                                break;
-                                            }
-                                            player.sendMessage("§cHow to Use: /fmg set <gameName> inv addItem <invName> <line>");
-                                            break;
-                                        }
-                                        case "create": {
-                                            if (args.length == 7) {
-                                                this.miniGames.getItems().getConfig().set("inventories." + args[4] + ".title", ChatColor.translateAlternateColorCodes('&', args[6].replace("{spc}", " ")));
-                                                this.miniGames.getItems().getConfig().set("inventories." + args[4] + ".size", Integer.parseInt(args[5]));
-                                                final List<String> inventoryList2 = this.miniGames.getItems().getConfig().getStringList("inventoryList");
-                                                if (!inventoryList2.contains(args[4])) {
-                                                    inventoryList2.add(args[4]);
-                                                }
-                                                this.miniGames.getItems().getConfig().set("inventoryList", inventoryList2);
-                                                this.miniGames.getItems().saveConfig();
-                                                player.sendMessage("§6" + args[3] + " inventory successfully created");
-                                                break;
-                                            }
-                                            player.sendMessage("§cHow to Use: /fmg set <gameName> inv create <invName> <9|18|27|36|45|54> <title>");
-                                            break;
-                                        }
-                                        default: {
-                                            player.sendMessage("§cHow to Use: /fmg set <gameName> inv <addItem|create> ...");
-                                            break;
-                                        }
-                                    }
-                                    break;
-                                }
-                                player.sendMessage("§cHow to Use: /fmg set <gameName> inv <addItem|create> ...");
-                                break;
-                            }
                             case "needClearInv": {
                                 if (args.length == 4) {
                                     this.plugin.getConfig().set("miniGames." + args[1] + ".needClearInv", Boolean.parseBoolean(args[3]));
@@ -275,7 +284,7 @@ public class MinigameCommand implements CommandExecutor
                                     this.plugin.saveConfig();
                                     List<String> commands = cmdList2;
                                     if (commands == null) {
-                                        commands = new ArrayList<String>();
+                                        commands = new ArrayList<>();
                                     }
                                     if (message2.equals("none")) {
                                         commands.remove(message2);
@@ -315,34 +324,29 @@ public class MinigameCommand implements CommandExecutor
                                 player.sendMessage("§cHow to Use: /fmg set <gameName> msg <customMsg> <message>");
                                 break;
                             }
-                            case "loc": {
-                                if (args.length == 4) {
-                                    this.miniGames.getEditor(args[1]).setLocation(args[3] + "Location", playerLocation.getWorld().getName(), playerLocation.getX(), playerLocation.getY(), playerLocation.getZ(), playerLocation.getYaw(), playerLocation.getPitch());
-                                    player.sendMessage("§6Your custom location " + args[3] + " has been saved to the " + args[1] + " game's end location.");
-                                    break;
-                                }
-                                player.sendMessage("§cHow to Use: /fmg set <gameName> loc <customName>");
-                                break;
-                            }
                             default: {
-                                player.sendMessage("§cHow to Use: /fmg set <gameName> <wait|start|end|gameType|kit|item|inv|needClearInv|setCmd|msg|loc> ...");
+                                player.sendMessage("§cHow to Use: /fmg set <gameName> <gameType|needClearInv|setCmd|msg> ...");
                                 break;
                             }
                         }
                         break;
                     }
-                    player.sendMessage("§cHow to Use: /fmg set <gameName> <wait|start|end|gameType|kit|item|inv|needClearInv|setCmd|msg|loc> ...");
+                    player.sendMessage("§cHow to Use: /fmg set <gameName> <gameType|needClearInv|setCmd|msg> ...");
                     break;
                 }
                 case "list": {
-                    player.sendMessage("§6List of games: " + this.plugin.getConfig().getStringList("gameList").toString());
+                    if (player.hasPermission("freedyminigamemaker.admin")) {
+                        player.sendMessage("§6List of games: " + this.plugin.getConfig().getStringList("gameList").toString());
+                        break;
+                    }
+                    player.sendMessage("§cYou do not have permission.");
                     break;
                 }
                 case "reload": {
                     if (player.hasPermission("freedyminigamemaker.admin")) {
                         this.plugin.reloadConfig();
-                        this.miniGames.getSettings().load();
-                        this.miniGames.getItems().load();
+                        MiniGames.getSettings().load();
+                        MiniGames.getItems().load();
                         player.sendMessage("§aThe reload has been completed.");
                         break;
                     }
@@ -351,19 +355,19 @@ public class MinigameCommand implements CommandExecutor
                 }
                 default: {
                     if (!player.hasPermission("freedyminigamemaker.admin")) {
-                        player.sendMessage("§cHow to Use: /fmg <join|quit|list> ...");
+                        player.sendMessage("§cHow to Use: /fmg <join|quit> ...");
                         break;
                     }
-                    player.sendMessage("§cHow to Use: /fmg <join|quit|create|remove|set|list|reload> ...");
+                    player.sendMessage("§cHow to Use: /fmg <join|quit|create|remove|kit|item|inv|loc|set|list|reload> ...");
                     break;
                 }
             }
         }
         else if (!player.hasPermission("freedyminigamemaker.admin")) {
-            player.sendMessage("§cHow to Use: /fmg <join|quit|list> ...");
+            player.sendMessage("§cHow to Use: /fmg <join|quit> ...");
         }
         else {
-            player.sendMessage("§cHow to Use: /fmg <join|quit|create|remove|set|list|reload> ...");
+            player.sendMessage("§cHow to Use: /fmg <join|quit|create|remove|kit|item|inv|loc|set|list|reload> ...");
         }
         return true;
     }

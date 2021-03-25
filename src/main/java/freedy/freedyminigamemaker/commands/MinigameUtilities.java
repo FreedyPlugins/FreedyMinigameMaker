@@ -1483,7 +1483,7 @@ public class MinigameUtilities implements CommandExecutor
                             break;
                         }
                         case "saveFile": {
-                            this.miniGames.getFileStore().saveConfig();
+                            MiniGames.getFileStore().saveConfig();
                             break;
                         }
                         case "respawnPoint": {

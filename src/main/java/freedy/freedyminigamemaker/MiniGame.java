@@ -8,7 +8,6 @@ import freedy.freedyminigamemaker.commands.FreedyCommandSender;
 import net.jafama.FastMath;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.*;
-import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.boss.BarColor;
