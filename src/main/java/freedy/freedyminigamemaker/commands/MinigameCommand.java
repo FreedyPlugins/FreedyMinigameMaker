@@ -347,6 +347,7 @@ public class MinigameCommand implements CommandExecutor
                         this.plugin.reloadConfig();
                         MiniGames.getSettings().load();
                         MiniGames.getItems().load();
+                        MiniGames.getLocations().load();
                         player.sendMessage("§aThe reload has been completed.");
                         break;
                     }
