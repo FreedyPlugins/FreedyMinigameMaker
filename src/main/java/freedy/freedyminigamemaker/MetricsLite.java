@@ -159,7 +159,7 @@ public class MetricsLite
                 service.getField("B_STATS_VERSION");
                 for (RegisteredServiceProvider<?> provider : Bukkit.getServicesManager().getRegistrations(service)) {
                     try {
-                        final Object plugin = provider.getService().getMethod("getPluginData", new Class[0]).invoke(provider.getProvider());
+                        final Object plugin = provider.getService().getMethod("getPluginData").invoke(provider.getProvider());
                         if (plugin instanceof JsonObject) {
                             pluginData.add((JsonElement)plugin);
                         }

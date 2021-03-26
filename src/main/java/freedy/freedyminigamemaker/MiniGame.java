@@ -8,7 +8,6 @@ import freedy.freedyminigamemaker.commands.FreedyCommandSender;
 import net.jafama.FastMath;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.*;
-import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.boss.BarColor;
@@ -29,6 +28,9 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 import org.bukkit.util.Vector;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -1024,8 +1026,27 @@ public class MiniGame extends DataStore
     }
     
     public String replaceCalc(final String string) {
-        System.out.println("removed syntax, calc");
-        return string;
+        String area = getSubFunc(string, "{calc(");
+        if (area == null) {
+            return string;
+        }
+        final ScriptEngineManager mgr = new ScriptEngineManager();
+        final ScriptEngine engine = mgr.getEngineByName("JavaScript");
+        try {
+            final Object subResult = engine.eval(area);
+            String result;
+            if (subResult instanceof Integer) {
+                result = ((Integer)subResult).toString();
+            }
+            else {
+                result = subResult.toString();
+            }
+            return string.replace("{calc(" + area + ")}", result);
+        }
+        catch (ScriptException e) {
+            e.printStackTrace();
+            return "(Error, please check the console.)";
+        }
     }
     
     public String replaceRound(final String string) {
@@ -1615,7 +1636,6 @@ public class MiniGame extends DataStore
                 }
                 case "calc": {
                     string = this.replaceCalc(string);
-                    continue;
                 }
             }
         }
@@ -1627,10 +1647,10 @@ public class MiniGame extends DataStore
             string = string.replace("{playerIsOp}", String.valueOf(player.isOp())).replace("{playerUuid}", player.getUniqueId().toString()).replace("{x}", String.valueOf(player.getLocation().getX())).replace("{y}", String.valueOf(player.getLocation().getY())).replace("{z}", String.valueOf(player.getLocation().getZ())).replace("{footX}", String.valueOf(player.getLocation().getX())).replace("{footY}", String.valueOf(player.getLocation().getY())).replace("{footZ}", String.valueOf(player.getLocation().getZ())).replace("{eyeX}", String.valueOf(player.getEyeLocation().getX())).replace("{eyeY}", String.valueOf(player.getEyeLocation().getY())).replace("{eyeZ}", String.valueOf(player.getEyeLocation().getZ())).replace("{yaw}", String.valueOf(player.getLocation().getYaw())).replace("{pitch}", String.valueOf(player.getLocation().getPitch())).replace("{world}", player.getLocation().getWorld().getName()).replace("{allPlayer}", player.getName()).replace("{onlinePlayer}", player.getName()).replace("{playerName}", player.getName()).replace("{playerCursor}", String.valueOf(player.getInventory().getHeldItemSlot())).replace("{playerIndex}", String.valueOf(this.playerList.indexOf(player))).replace("{playerHealth}", String.valueOf(player.getHealth())).replace("{playerGameMode}", player.getGameMode().name()).replace("{playerIsBlocking}", string.contains("{playerIsBlocking}") ? String.valueOf(player.isHandRaised()) : "none").replace("{playerIsLeashed}", string.contains("{playerIsLeashed}") ? String.valueOf(player.isLeashed()) : "none").replace("{playerIsSneaking}", string.contains("{playerIsSneaking}") ? String.valueOf(player.isSneaking()) : "none").replace("{playerIsGliding}", string.contains("{playerIsGliding}") ? String.valueOf(player.isGliding()) : "none").replace("{playerIsSwimming}", string.contains("{playerIsSwimming}") ? String.valueOf(player.isSwimming()) : "none").replace("{playerIsSleeping}", string.contains("{playerIsSleeping}") ? String.valueOf(player.isSleeping()) : "none").replace("{playerFood}", string.contains("{playerFood}") ? String.valueOf(player.getFoodLevel()) : "none").replace("{player}", player.getName()).replace("{playerExp}", string.contains("{playerExp}") ? String.valueOf(player.getTotalExperience()) : "none");
         }
         else if (this.playerList.isEmpty()) {
-            string = string.replace("{allPlayer}", "none").replace("{playerName}", "none").replace("{playerIndex}", "none").replace("{player}", "none");
+            string = string.replace("{onlinePlayer}", "none").replace("{allPlayer}", "none").replace("{playerName}", "none").replace("{playerIndex}", "none").replace("{player}", "none");
         }
         else {
-            string = string.replace("{allPlayer}", this.playerList.get(0).getName()).replace("{playerName}", this.playerList.get(0).getName()).replace("{playerIndex}", "0").replace("{player}", this.playerList.get(0).getName());
+            string = string.replace("{onlinePlayer}", this.playerList.get(0).getName()).replace("{allPlayer}", this.playerList.get(0).getName()).replace("{playerName}", this.playerList.get(0).getName()).replace("{playerIndex}", "0").replace("{player}", this.playerList.get(0).getName());
         }
         string = this.replaceCalcAll(string, player);
         return string;

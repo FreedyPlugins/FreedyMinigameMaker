@@ -21,7 +21,7 @@ import java.util.UUID;
 public class FreedyCommandSender implements ConsoleCommandSender
 {
     public String output;
-    
+
     public FreedyCommandSender() {
         this.output = "";
     }

@@ -24,11 +24,11 @@ public class PlayerData
     
     public PlayerData(final Player player) {
         this.respawnPoint = null;
-        this.bossBar = new HashMap<String, BossBar>();
-        this.inventory = new HashMap<String, Inventory>();
+        this.bossBar = new HashMap<>();
+        this.inventory = new HashMap<>();
         this.player = player;
-        this.customData = new HashMap<String, String>();
-        this.scoreBoard = new HashMap<Integer, String>();
+        this.customData = new HashMap<>();
+        this.scoreBoard = new HashMap<>();
         this.scoreBoardTitle = "";
     }
     
@@ -41,7 +41,7 @@ public class PlayerData
     }
     
     public void resetInventory() {
-        this.inventory = new HashMap<String, Inventory>();
+        this.inventory = new HashMap<>();
     }
     
     public void setBossBar(final String barName, final BossBar bossBar) {

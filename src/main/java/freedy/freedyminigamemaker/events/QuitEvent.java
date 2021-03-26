@@ -28,10 +28,10 @@ public class QuitEvent implements Listener
         final Player player = event.getPlayer();
         if (this.miniGames.isJoined(player)) {
             MiniGame miniGame = this.miniGames.getJoined(player);
-            if (this.miniGames.getSettings().getConfig().getBoolean("hideJoinLeaveMessage")) {
+            if (MiniGames.getSettings().getConfig().getBoolean("hideJoinLeaveMessage")) {
                 event.setQuitMessage(null);
             }
-            final List<String> cmds = this.miniGames.getSettings().getConfig().getStringList("serverLeaveCmd");
+            final List<String> cmds = MiniGames.getSettings().getConfig().getStringList("serverLeaveCmd");
             if (cmds != null) {
                 miniGame.executeCommands(MinigameUtilities.newFreedyCommandSender, cmds, player);
             }

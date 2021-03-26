@@ -25,7 +25,7 @@ public class CommandEvent implements Listener
         final Player player = event.getPlayer();
         if (this.miniGames.isJoined(player)) {
             final MiniGame miniGame = this.miniGames.getJoined(player);
-            for (final String cmd : this.miniGames.getSettings().getConfig().getStringList("commandCmd")) {
+            for (final String cmd : MiniGames.getSettings().getConfig().getStringList("commandCmd")) {
                 final String output = miniGame.executeEventCommands(cmd.replace("{command}", event.getMessage()).replace("{args}", event.getMessage().replace(" ", ", ")), player);
                 if (output.equals("false")) {
                     event.setCancelled(true);

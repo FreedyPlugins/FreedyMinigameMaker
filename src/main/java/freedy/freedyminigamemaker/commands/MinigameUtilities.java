@@ -53,7 +53,7 @@ public class MinigameUtilities implements CommandExecutor
                             if (sender instanceof BlockCommandSender) {
                                 final BlockCommandSender blockCommandSender = (BlockCommandSender)sender;
                                 final Block commandBlock = blockCommandSender.getBlock();
-                                if (commandBlock.getType().equals(Material.COMMAND_BLOCK)) {
+                                if (commandBlock instanceof CommandBlock) {
                                     final CommandBlock cmdBlock = (CommandBlock)commandBlock.getState();
                                     final Location locatinon = cmdBlock.getLocation();
                                     String p = "none";
@@ -901,6 +901,7 @@ public class MinigameUtilities implements CommandExecutor
                                 break;
                             }
                             String message3 = String.join(" ", Arrays.copyOfRange(args, 5, args.length));
+                            String second = message3;
                             message3 = this.replace(player, miniGame, message3);
                             final String elseCmd = MiniGame.getSubFunc(message3, "{else(");
                             message3 = message3.replace("{else(" + elseCmd + ")}", "");
@@ -908,6 +909,11 @@ public class MinigameUtilities implements CommandExecutor
                             message3 = message3.replace("{do(" + doCmd + ")}", "");
                             final boolean result2 = this.checkIf(args[2], args[4], args[3]);
                             if (result2) {
+                                if (!(message3.equals("") || message3.equals(" "))) {
+                                    miniGame.executeCommand((FreedyCommandSender) sender, second, player);
+                                    break;
+                                }
+
                                 if (doCmd != null) {
                                     final String[] split4;
                                     final String[] split = split4 = doCmd.split(" && ");
@@ -917,7 +923,6 @@ public class MinigameUtilities implements CommandExecutor
                                         }
                                     }
                                 }
-                                miniGame.executeCommand((FreedyCommandSender) sender, message3, player);
                                 break;
                             }
                             if (elseCmd != null) {
@@ -936,10 +941,13 @@ public class MinigameUtilities implements CommandExecutor
                             if (args.length >= 6) {
                                 String message2 = String.join(" ", Arrays.copyOfRange(args, 5, args.length));
                                 message2 = this.replace(player, miniGame, message2);
+                                String second = message2;
                                 final String doCmd2 = MiniGame.getSubFunc(message2, "{do(");
                                 message2 = message2.replace("{do(" + doCmd2 + ")}", "");
-                                while (this.checkIf(args[2], args[4], args[3])) {
-                                    if (doCmd2 != null) {
+                                while (this.checkIf(this.replace(player, miniGame, args[2]), this.replace(player, miniGame, args[4]), this.replace(player, miniGame, args[3]))) {
+                                    if (!(message2.equals("") || message2.equals(" "))) {
+                                        miniGame.executeCommand((FreedyCommandSender) sender, second, player);
+                                    } else if (doCmd2 != null) {
                                         final String[] split6;
                                         final String[] split3 = split6 = doCmd2.split(" && ");
                                         for (final String cmd2 : split6) {
@@ -949,7 +957,6 @@ public class MinigameUtilities implements CommandExecutor
                                         }
                                     }
                                 }
-                                miniGame.executeCommand((FreedyCommandSender) sender, message2, player);
                                 break;
                             }
                             player.sendMessage("§cHow to Use: /fut <player> while <value1> <==|/=|>|>=|<|<=> <value2> <cmdLine>");
@@ -1445,7 +1452,8 @@ public class MinigameUtilities implements CommandExecutor
                         }
                         case "conLog": {
                             if (args.length >= 3) {
-                                System.out.println(this.replace(player, miniGame, args[2]));
+                                final String message6 = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
+                                System.out.println(message6);
                                 break;
                             }
                             player.sendMessage("§cUsage: /fut <player> conLog <message>");
@@ -1483,7 +1491,7 @@ public class MinigameUtilities implements CommandExecutor
                             break;
                         }
                         case "saveFile": {
-                            this.miniGames.getFileStore().saveConfig();
+                            MiniGames.getFileStore().saveConfig();
                             break;
                         }
                         case "respawnPoint": {
