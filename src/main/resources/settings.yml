@@ -1,0 +1,8 @@
+maxPlayerToJoin: '§cThe game has reached its maximum number of people'
+gameAlreadyStarted: '§cThe game has already started'
+needClearInv: '§cYou must empty your inventory to participate in the game'
+noGameExist: '§cWe don''t have the game'
+alreadyPlaying: '§cThe game is already playing'
+noGameToQuit: '§cThere are no mini-games in action'
+cancelBlockExplode: false
+hideJoinLeaveMessage: false
